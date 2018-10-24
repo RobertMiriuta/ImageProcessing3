@@ -213,6 +213,11 @@ namespace INFOIBV
                 case "fourier descriptor":
                     Image = conversionFourier(Image);
                     break;
+                case "pipeline":
+                    //Here the magic happens
+                    Image = applyPipeline(Image);
+                    //Jk it's still trash
+                    break;
                 default:
                     Console.WriteLine("Nothing matched");
                     break;
@@ -226,7 +231,8 @@ namespace INFOIBV
                 OutputImage.SetPixel(x, y, Image[x, y]); // Set the pixel color at coordinate (x,y)
 
             pictureBox2.Image = OutputImage; // Display output image
-
+            
+            //TODO Add a histogram function, to reduce mess.
             histoOut.Series.Clear();
             var result = calculateHistogramFromImage(OutputImage); //Calculates histogram for the output image.
             var rArray = result.Item1;
@@ -264,8 +270,14 @@ namespace INFOIBV
             progressBar.Visible = false; // Hide progress bar
         }
 
-        /*Assignment 1 Functionalities
-         **/
+        //_______Main Functionality_________
+
+        private Color[,] applyPipeline(Color[,] image)
+        {
+            //TODO Apply pipeline magic here
+            return image;
+        }
+
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
             int[,] sobelFilterX = { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } };
@@ -697,9 +709,6 @@ namespace INFOIBV
             return 0;
         }
         
-        //Assignment 2 functionality
-        //_______Main Functionality_________
-
         //Applies a geodesic erosion to an image, given a check image
         private Color[,] conversionGeodesicErosion(Color[,] image, bool isBinary, Color[,] checkImage)
         {
@@ -1308,5 +1317,10 @@ namespace INFOIBV
                     label1.Text = "Enter the structuring element and the weight. Example: 0,0,2 1,0,0 x,y,w";
             }
         }
+    }
+
+    public class Coordinate
+    {
+        //TODO Implement coordinates to replace Tuple<int,int>
     }
 }
