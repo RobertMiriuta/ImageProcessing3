@@ -34,38 +34,31 @@ namespace INFOIBV
                 imageFileName.Text = file; // Show file name
                 if (InputImage != null) InputImage.Dispose(); // Reset image
                 InputImage = new Bitmap(file); // Create new Bitmap from file
-                if (InputImage.Size.Height <= 0 || InputImage.Size.Width <= 0 ||
-                    InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // Dimension check
+                pictureBox1.Image = InputImage; // Display input image
+                var result = calculateHistogramFromImage(InputImage);
+                var rArray = result.Item1;
+                var gArray = result.Item2;
+                var bArray = result.Item3;
+
+                var rSeries = histoIn.Series.Add("RedHistogram");
+                rSeries.BorderWidth = 0;
+                rSeries.Color = Color.IndianRed;
+                var gSeries = histoIn.Series.Add("GreenHistogram");
+                gSeries.BorderWidth = 0;
+                gSeries.Color = Color.LightSeaGreen;
+                var bSeries = histoIn.Series.Add("BlueHistogram");
+                bSeries.BorderWidth = 0;
+                bSeries.Color = Color.DeepSkyBlue;
+
+                var max = 0;
+
+                for (var i = 0; i < 256; i++)
                 {
-                    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
-                }
-                else
-                {
-                    pictureBox1.Image = InputImage; // Display input image
-                    var result = calculateHistogramFromImage(InputImage);
-                    var rArray = result.Item1;
-                    var gArray = result.Item2;
-                    var bArray = result.Item3;
-
-                    var rSeries = histoIn.Series.Add("RedHistogram");
-                    rSeries.BorderWidth = 0;
-                    rSeries.Color = Color.IndianRed;
-                    var gSeries = histoIn.Series.Add("GreenHistogram");
-                    gSeries.BorderWidth = 0;
-                    gSeries.Color = Color.LightSeaGreen;
-                    var bSeries = histoIn.Series.Add("BlueHistogram");
-                    bSeries.BorderWidth = 0;
-                    bSeries.Color = Color.DeepSkyBlue;
-
-                    var max = 0;
-
-                    for (var i = 0; i < 256; i++)
-                    {
-                        rSeries.Points.Add(new DataPoint(i, rArray[i]));
-                        gSeries.Points.Add(new DataPoint(i, gArray[i]));
-                        bSeries.Points.Add(new DataPoint(i, bArray[i]));
-                        if (max < rArray[i])
-                            max = rArray[i];
+                    rSeries.Points.Add(new DataPoint(i, rArray[i]));
+                    gSeries.Points.Add(new DataPoint(i, gArray[i]));
+                    bSeries.Points.Add(new DataPoint(i, bArray[i]));
+                    if (max < rArray[i])
+                        max = rArray[i];
                         if (max < gArray[i])
                             max = gArray[i];
                         if (max < bArray[i])
@@ -77,7 +70,6 @@ namespace INFOIBV
 
                     histoIn.ChartAreas[0].AxisY.Minimum = 0;
                     histoIn.ChartAreas[0].AxisY.Maximum = max;
-                }
             }
         }
 
@@ -272,19 +264,53 @@ namespace INFOIBV
 
         //_______Main Functionality_________
 
+        private void progressPicture(Color[,] image)
+        {
+            Bitmap stum = new Bitmap(InputImage.Size.Width, InputImage.Size.Height);
+            for (var x = 0; x < image.GetLength(0); x++)
+            for (var y = 0; y < image.GetLength(1); y++)
+                stum.SetPixel(x, y, image[x, y]); // Set the pixel color at coordinate (x,y)
+            Console.WriteLine("OUTPUT IMAGE");
+        
+            pictureBox2.Image = stum;
+            pictureBox2.Update();
+        }
+
         private Color[,] applyPipeline(Color[,] image)
         {
             //TODO Apply pipeline magic here
+            //Phase one
+            image = conversionGrayscale(image);
+            Console.WriteLine("Conversion grayscale done");
+            progressPicture(image);
+            progressBar.Value = 1;
+            //image = conversionGaussian(image, 2, 5);
+            Console.WriteLine("Conversion Gaussian done");
+            progressPicture(image);
+            progressBar.Value = 1;
+            //TODO Implement automatic Thresholding
+            image = conversionThreshold(image, 160);
+            Console.WriteLine("Conversion Thresholding done");
+            progressPicture(image);
+            progressBar.Value = 1;
+            image = conversionEdgeDetection(image);
+            Console.WriteLine("Conversion Edge done");
+            progressPicture(image);
+            progressBar.Value = 1;
+            image = conversionThreshold(image, 0);
+            Console.WriteLine("Conversion Thresholding done");
+            progressBar.Value = 1;
             return image;
         }
 
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
-            int[,] sobelFilterX = { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } };
+            int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
             int[,] sobelFilterY = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+            int[,] sobelDiagonal = { { -2, -1, 0}, { -1, 0, 1}, { 0, 1, 2} };
             int size = sobelFilterY.GetLength(0);
             int halfSize = (size - 1) / 2;
-            Color[,] imageSobelX = new Color[InputImage.Size.Width, InputImage.Size.Height];
+            double[,] imageSobelX = new double[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
             {
                 for (int y = 0; y < InputImage.Size.Height; y++)
@@ -307,7 +333,7 @@ namespace INFOIBV
                             }
                         }
 
-                        newColor = newColor * 0.25;
+                        newColor = newColor;
                         if (newColor > 255)
                         {
                             newColor = 255;
@@ -319,15 +345,13 @@ namespace INFOIBV
 
 
                     }
-                    int convertedNewColor = Convert.ToInt16(newColor);
-                    Color updatedColor = Color.FromArgb(convertedNewColor, convertedNewColor, convertedNewColor);
-                    imageSobelX[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
+                    imageSobelX[x, y] = newColor; // Set the new pixel color at coordinate (x,y)
                     progressBar.PerformStep(); // Increment progress bar
                 }
             }
 
             progressBar.Value = 1;
-            Color[,] imageSobelY = new Color[InputImage.Size.Width, InputImage.Size.Height];
+            double[,] imageSobelY = new double[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
             {
                 for (int y = 0; y < InputImage.Size.Height; y++)
@@ -350,7 +374,7 @@ namespace INFOIBV
                             }
                         }
 
-                        newColor = newColor * 0.25;
+                        newColor = newColor;
                         if (newColor > 255)
                         {
                             newColor = 255;
@@ -359,14 +383,51 @@ namespace INFOIBV
                         {
                             newColor = 0;
                         }
+
                     }
-                    int convertedNewColor = Convert.ToInt16(newColor);
-                    Color updatedColor = Color.FromArgb(convertedNewColor, convertedNewColor, convertedNewColor);
-                    imageSobelY[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
+                    imageSobelY[x, y] = newColor;                             // Set the new pixel color at coordinate (x,y)
                 }
 
             }
 
+            double[,] imagesobelDiagonal = new double[InputImage.Size.Width, InputImage.Size.Height];
+            for (int x = 0; x < InputImage.Size.Width; x++)
+            {
+                for (int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    double newColor = 0.0;
+                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
+                        x >= InputImage.Size.Width - halfSize)
+                    {
+                        newColor = 128.0;
+                    }
+                    else
+                    {
+                        for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                        {
+                            for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
+                            {
+                                Color filterColor = image[x - xFilter, y - yFilter];
+                                newColor += sobelDiagonal[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.R;
+
+                            }
+                        }
+
+                        newColor = newColor;
+                        if (newColor > 255)
+                        {
+                            newColor = 255;
+                        }
+                        else if (newColor < 0)
+                        {
+                            newColor = 0;
+                        }
+
+                    }
+                    imagesobelDiagonal[x, y] = newColor;                             // Set the new pixel color at coordinate (x,y)
+                }
+
+            }
             progressBar.Value = 1;
             Color[,] newImage = new Color[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
@@ -381,15 +442,18 @@ namespace INFOIBV
                     }
                     else
                     {
-                        newColor = imageSobelX[x, y].R + imageSobelY[x, y].R;
+                        double calculation = Math.Pow(imageSobelX[x, y], 2) + Math.Pow(imageSobelY[x, y], 2) +
+                                             Math.Pow(imagesobelDiagonal[x, y], 2);
+                        newColor = Math.Pow(calculation, (1.0/2.0));
                         if (newColor > 255)
                         {
-                            newColor = 255;
+                            newColor = 255.0;
                         }
                         else if (newColor < 0)
                         {
-                            newColor = 0;
+                            newColor = 0.0;
                         }
+
                     }
 
                     int convertedNewColor = Convert.ToInt16(newColor);
