@@ -287,13 +287,13 @@ namespace INFOIBV
             progressPicture(image);
             progressBar.Value = 1;
             //TODO Implement automatic Thresholding
-            image = conversionThreshold(image, 120);
+            //image = conversionThreshold(image, 120);
             progressPicture(image);
             progressBar.Value = 1;
             image = conversionEdgeDetection(image);
             progressPicture(image);
             progressBar.Value = 1;
-            image = conversionThreshold(image, 0);
+            image = conversionThreshold(image, 40);
             progressBar.Value = 1;
             return image;
         }
