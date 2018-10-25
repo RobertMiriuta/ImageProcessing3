@@ -1074,14 +1074,6 @@ namespace INFOIBV
                 for (var x = 0; x < imgBmap.Size.Width; x++)
                 for (var y = 0; y < imgBmap.Size.Height; y++)
                     image[x, y] = imgBmap.GetPixel(x, y); // Set pixel color in array at (x,y)
-                if (imgBmap.Size.Height <= 0 || imgBmap.Size.Width <= 0 ||
-                    imgBmap.Size.Height > 512 || imgBmap.Size.Width > 512) // Dimension check
-                {
-                    Console.WriteLine(imgBmap.Size.Height + "::" + imgBmap.Size.Width);
-                    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
-                    return null;
-                }
-
                 return image;
             }
 
@@ -1091,6 +1083,7 @@ namespace INFOIBV
         //Checks if two images are of the same size
         private bool isImageSameSize(Color[,] image1, Color[,] image2)
         {
+            Console.WriteLine(image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
             if (image1.GetLength(0) != image2.GetLength(0) || image1.GetLength(1) != image2.GetLength(1)
             ) //images should be of the same size
             {
