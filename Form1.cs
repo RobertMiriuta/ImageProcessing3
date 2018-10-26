@@ -211,7 +211,7 @@ namespace INFOIBV
                     //Jk it's still trash
                     break;
                 default:
-                    Console.WriteLine("Nothing matched");
+                    Debugger.debug(1, "Nothing matched");
                     break;
             }
 
@@ -270,7 +270,7 @@ namespace INFOIBV
             for (var x = 0; x < image.GetLength(0); x++)
             for (var y = 0; y < image.GetLength(1); y++)
                 stum.SetPixel(x, y, image[x, y]); // Set the pixel color at coordinate (x,y)
-            Console.WriteLine("OUTPUT IMAGE");
+            Debugger.debug(1, "Showing the intermediate output image");
         
             pictureBox2.Image = stum;
             pictureBox2.Update();
@@ -473,7 +473,8 @@ namespace INFOIBV
             }
 
             int percentile = (int)(percentage * amount_of_pixels);
-            Console.Out.WriteLine("the percentile is set at: " + percentile);
+            String debugmessage = "the percentile is set at: " + percentile;
+            Debugger.debug(2, debugmessage);
 
             low_R = getColorAtPercentileLowFromHistogram(histogram_red, percentile);
             high_R = getColorAtPercentileHighFromHistogram(histogram_red, percentile);
@@ -737,7 +738,7 @@ namespace INFOIBV
             catch (Exception E)
             {
                 MessageBox.Show("Did you input a correct filter?");
-                Console.WriteLine(E.Message);
+                Debugger.debug(2, E.Message);
             }
             return null;
         }
@@ -762,7 +763,7 @@ namespace INFOIBV
                 catch (Exception E)
                 {
                     MessageBox.Show("Did you input a correct filter?");
-                    Console.WriteLine(E.Message);
+                    Debugger.debug(2, E.Message);
                 }
             return null;
         }
@@ -869,7 +870,8 @@ namespace INFOIBV
                 newImage[x, y] = Color.FromArgb(newColor, newColor, newColor);
             }
 
-            Console.WriteLine("Breakpoint");
+            Debugger.debug(2, "Conversion dilation grayscale has been executed");
+
 
             return newImage;
         }
@@ -880,7 +882,7 @@ namespace INFOIBV
             var startCoordinate = getStartPoint(image);
             if (startCoordinate == null)
             {
-                Console.WriteLine("No shape detected");
+                Debugger.debug(2, "No shape detected");
                 return image;
             }
 
@@ -898,7 +900,7 @@ namespace INFOIBV
                 }
                 catch
                 {
-                    Console.Write("Whoops");
+                    Debugger.debug(2, "Exception thrown in conversion Boundary");
                 }
 
             return newImage;
@@ -924,26 +926,19 @@ namespace INFOIBV
             }
             var fourierCoefficientArray = createFourierDescriptor(decimatedList.ToArray());
 
-            var counter = 0;
             foreach (var value in fourierCoefficientArray)
             {
-                //Console.Write(counter + " ");
-                Console.WriteLine(value.Item1);
-                counter++;
+                Debugger.debug(2, "Fourier value, real: " + value.Item1);
             }
-            counter = 0;
-            Console.WriteLine("eleGiggle");
             foreach (var value in fourierCoefficientArray)
             {
-                //Console.Write(counter + " ");
-                Console.WriteLine(value.Item2);
-                counter++;
+                Debugger.debug(2, "Fourier value, imaginary: " + value.Item2);
             }
             var newImage = makeBinaryImage();
             return newImage;
         }
 
-        //Takes a greyscale image as input and returns its complementary image
+        //Takes a grayscale image as input and returns its complementary image
         private Color[,] conversionComplement(Color[,] image)
         {
             return conversionNegative(image); //It's actually the same thing
@@ -1049,7 +1044,7 @@ namespace INFOIBV
             return listOfCoordinates;
         }
 
-        //Counts the amount of distinct values of the InputImage ;we assume that the image is a greyscale
+        //Counts the amount of distinct values of the InputImage ;we assume that the image is a grayscale
         //Will count the amount of distinct red values when applied to a colored image
         private int countDistinctValues()
         {
@@ -1159,7 +1154,7 @@ namespace INFOIBV
                 }
                 catch
                 {
-                    Console.WriteLine("Out of bounds");
+                    Debugger.debug(2, "Exception thrown in getNextPoint, this means the 'pointer' is out of bounds");
                 }
                 if (colour == 255) return direction;
 
@@ -1236,7 +1231,8 @@ namespace INFOIBV
                 int xCoordinate = Convert.ToInt16(coordinates[0]);
                 int yCoordinate = Convert.ToInt16(coordinates[1]);
                 coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate);
-                Console.WriteLine("X: " + xCoordinate + " Y: " + yCoordinate);
+                String debugMessage = "Structuring element binary: X: " + xCoordinate + " Y: " + yCoordinate;
+                Debugger.debug(2, debugMessage);
             }
 
             return coordinateTupleArray;
@@ -1254,7 +1250,8 @@ namespace INFOIBV
                 int yCoordinate = Convert.ToInt16(coordinates[1]);
                 int weight = Convert.ToInt16(coordinates[2]);
                 coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate, weight);
-                Console.WriteLine("X: " + xCoordinate + " Y: " + yCoordinate + " weight: " + weight);
+                String debugMessage = "Structuring element grayscale: X: " + xCoordinate + " Y: " + yCoordinate + " weight: " + weight;
+                Debugger.debug(2, debugMessage);
             }
 
             return coordinateTupleArray;
@@ -1312,5 +1309,18 @@ namespace INFOIBV
     public class Coordinate
     {
         //TODO Implement coordinates to replace Tuple<int,int>
+    }
+
+    public class Debugger
+    {
+        private static int debuglevel = 0;
+
+        public static void debug(int level, String message)
+        {
+            if (level >= debuglevel)
+            {
+                Console.WriteLine(message);
+            }
+        }
     }
 }
