@@ -278,16 +278,21 @@ namespace INFOIBV
 
         private Color[,] applyPipeline(Color[,] image)
         {
-            //TODO Apply pipeline magic here
-            //Phase one
-            for (int i = 0; i < 3; i++)
-            {
-                image = conversionDilation(image, true);
-            }
-            for (int x = 0; x < 3; x++)
-            {
-                image = conversionErosion(image, true);
-            }
+            image = conversionGrayscale(image);
+            progressPicture(image);
+            progressBar.Value = 1;
+            //image = conversionGaussian(image, 2, 5);
+            progressPicture(image);
+            progressBar.Value = 1;
+            //TODO Implement automatic Thresholding
+            image = conversionThreshold(image, 120);
+            progressPicture(image);
+            progressBar.Value = 1;
+            image = conversionEdgeDetection(image);
+            progressPicture(image);
+            progressBar.Value = 1;
+            image = conversionThreshold(image, 0);
+            progressBar.Value = 1;
             return image;
         }
 
