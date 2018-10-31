@@ -365,6 +365,26 @@ namespace INFOIBV
             return image;
         }
 
+        private Color[,] conversionPercentageThreshold(Color[,] image)
+        {
+            image = conversionGrayscale(image); // Convert image to grayscale, even though it already is a grayscale image.
+            progressBar.Value = 1;
+            int threshold = 0;
+            for (int x = 0; x < InputImage.Size.Width; x++)
+            {
+                for (int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    Color pixelColor = image[x, y];                         // Get the pixel color at coordinate (x,y)
+                    int newColor = pixelColor.R > threshold ? 255 : 0;      //Uses the red color to calculate the threshold, since all channels are the same.
+                    Color updatedColor = Color.FromArgb(newColor, newColor, newColor); // Pixel is either 255 or 0, depending on the threshold.
+                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
+                    progressBar.PerformStep();                              // Increment progress bar
+                }
+
+            }
+            return image;
+        }
+
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
             int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
