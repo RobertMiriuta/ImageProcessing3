@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
@@ -148,7 +149,7 @@ namespace INFOIBV
                     Image = conversionGaussian(Image, Convert.ToDouble(textBox2.Text), Convert.ToInt16(textBox3.Text));
                     break;
                 case "threshold":
-                    Image = conversionThreshold(Image, Convert.ToInt16(textBox1.Text));
+                    Image = conversionThresholdBernsen(Image, Convert.ToInt16(textBox1.Text));
                     break;
                 case "linear":
                     Image = conversionLinear(Image, boxes);
@@ -278,16 +279,13 @@ namespace INFOIBV
 
         private Color[,] applyPipeline(Color[,] image)
         {
-            //TODO Apply pipeline magic here
-            //Phase one
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
             //image = conversionGaussian(image, 2, 5);
             progressPicture(image);
             progressBar.Value = 1;
-            //TODO Implement automatic Thresholding
-            image = conversionThreshold(image, 120);
+            image = conversionThresholdBernsen(image, 15);
             progressPicture(image);
             progressBar.Value = 1;
             image = conversionEdgeDetection(image);
@@ -295,6 +293,70 @@ namespace INFOIBV
             progressBar.Value = 1;
             image = conversionThreshold(image, 0);
             progressBar.Value = 1;
+            return image;
+        }
+
+        private Color[,] conversionThresholdBernsen(Color[,] image, int contrastThreshold)
+        {
+            int size = 3;
+            int halfSize = (size - 1) / 2;
+            for (int x = 0; x < InputImage.Size.Width; x++)
+            {
+                for (int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    int[] pixelVector = new int[(size * size) - 1];
+                    int pixelVectorIndex = 0;
+                    for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                    {
+                        for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
+                        {
+                            try
+                            {
+                                if (xFilter == 0 && yFilter == 0)
+                                {
+                                    Debugger.debug(2, "Stepping over the center value");
+                                }
+                                else
+                                {
+                                    Color filterColor = image[x - xFilter, y - yFilter];
+                                    Debugger.debug(2, "YOUR NEW COLOR " + filterColor.R);
+                                    pixelVector[pixelVectorIndex] = filterColor.R;
+                                    pixelVectorIndex++;
+                                    Debugger.debug(2, "YOUR NEW VECTOR INDEX " + pixelVectorIndex);
+                                }
+                            }
+                            catch(IndexOutOfRangeException IOORE)
+                            {
+                                Debugger.debug(2, "Threshold bernsen was out of bounds, but that is okay " + pixelVectorIndex);
+                                Debugger.debug(3, IOORE.Message);
+                                pixelVector[pixelVectorIndex] = 0;
+                                pixelVectorIndex++;
+                            }
+                            
+                        }
+                    }
+
+                    int newColor;
+                    int max = pixelVector.Max();
+                    int min = pixelVector.Min();
+                    if (max - min < contrastThreshold)
+                    {
+                        newColor = 0;
+                    }
+                    else
+                    {
+                        int threshold = (min + max) / 2;
+                        if (x + y % 100 == 0) Debugger.debug(2, "The selected threshold is: " + threshold);
+                        int pixelColor = image[x, y].R;
+                        newColor = pixelColor > threshold ? 255 : 0;      //Uses the red color to calculate the threshold, since all channels are the same.
+                    }
+
+                    Color updatedColor = Color.FromArgb(newColor, newColor, newColor); // Pixel is either 255 or 0, depending on the threshold.
+                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
+                    progressBar.PerformStep();                              // Increment progress bar
+                }
+
+            }
             return image;
         }
 
@@ -1184,8 +1246,30 @@ namespace INFOIBV
             return lowValue;
         }
 
+        //Returns the lowest value of a list.
+        private int getMinimumValue(int[] valueList)
+        {
+            var lowValue = 255;
+            foreach (var element in valueList)
+                if (element < lowValue)
+                    lowValue = element;
+
+            return lowValue;
+        }
+
         //Returns the highest value of a list.
         private int getMaximumValue(List<int> valueList)
+        {
+            var highValue = 0;
+            foreach (var element in valueList)
+                if (element > highValue)
+                    highValue = element;
+
+            return highValue;
+        }
+
+        //Returns the highest value of a list.
+        private int getMaximumValue(int[] valueList)
         {
             var highValue = 0;
             foreach (var element in valueList)
@@ -1316,7 +1400,7 @@ namespace INFOIBV
 
         public static void debug(int level, String message)
         {
-            if (level >= debuglevel)
+            if (debuglevel >= level)
             {
                 Console.WriteLine(message);
             }
