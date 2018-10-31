@@ -1304,6 +1304,14 @@ namespace INFOIBV
                     label1.Text = "Enter the structuring element and the weight. Example: 0,0,2 1,0,0 x,y,w";
             }
         }
+
+        private void outToInButton_Click(object sender, EventArgs e)
+        {
+            if (OutputImage == null)
+                return;
+            InputImage = (Bitmap)OutputImage.Clone();
+            pictureBox1.Image = InputImage;
+        }
     }
 
     public class Coordinate
