@@ -149,6 +149,9 @@ namespace INFOIBV
                     Image = conversionGaussian(Image, Convert.ToDouble(textBox2.Text), Convert.ToInt16(textBox3.Text));
                     break;
                 case "threshold":
+                    Image = conversionThreshold(Image, Convert.ToInt16(textBox1.Text));
+                    break;
+                case "threshold bernsen":
                     Image = conversionThresholdBernsen(Image, Convert.ToInt16(textBox1.Text));
                     break;
                 case "linear":
