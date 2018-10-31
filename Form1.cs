@@ -290,10 +290,10 @@ namespace INFOIBV
             //image = conversionThreshold(image, 120);
             progressPicture(image);
             progressBar.Value = 1;
-            image = conversionEdgeDetection(image);
+            //image = conversionEdgeDetection(image);
             progressPicture(image);
             progressBar.Value = 1;
-            image = conversionThreshold(image, 40);
+            image = conversionThreshold(image, 180);
             progressBar.Value = 1;
             return image;
         }
