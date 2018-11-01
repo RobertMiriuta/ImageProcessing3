@@ -180,6 +180,7 @@
             "contrastadjustment",
             "gaussian",
             "threshold",
+            "threshold percentage",
             "threshold bernsen",
             "linear",
             "median",
