@@ -371,10 +371,11 @@ namespace INFOIBV
         private Color[,] conversionPercentageThreshold(Color[,] image)
         {
             Tuple<int[], int[], int[]> histogram = calculateHistogramFromImage(InputImage); //picking the green channel since image is greyscale
+            double percentile = (Convert.ToDouble(image.GetLength(0) + image.GetLength(1)) * 0.1);
             int[] onechannel = histogram.Item2;
             for (int i = 255; i > 0; i--)
             {
-                if (onechannel[i] > 20)
+                if (onechannel[i] > percentile)
                     return conversionThreshold(image, Convert.ToInt16(Convert.ToDouble(i) * 0.7));
             }
             Debugger.debug(2, "Applying default threshold, no color with 20 values found");
