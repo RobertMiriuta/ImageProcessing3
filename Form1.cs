@@ -167,28 +167,28 @@ namespace INFOIBV
                     Image = conversionEdgeDetection(Image);
                     break;
                 case "erosion":
-                    Image = conversionErosion(Image, checkeredcheckbox);
+                    Image = conversionErosion(Image, checkeredcheckbox, true);
                     break;
                 case "dilation":
-                    Image = conversionDilation(Image, checkeredcheckbox);
+                    Image = conversionDilation(Image, checkeredcheckbox, true);
                     break;
                 case "geodesic erosion":
                     secondImage = getSecondImage();
                     if (secondImage == null) return;
-                    Image = conversionGeodesicErosion(Image, checkeredcheckbox, secondImage);
+                    Image = conversionGeodesicErosion(Image, checkeredcheckbox, secondImage, true);
                     break;
                 case "geodesic dilation":
                     secondImage = getSecondImage();
                     if (secondImage == null) return;
-                    Image = conversionGeodesicDilation(Image, checkeredcheckbox, secondImage);
+                    Image = conversionGeodesicDilation(Image, checkeredcheckbox, secondImage, true);
                     break;
                 case "opening":
-                    Image = conversionErosion(Image, checkeredcheckbox);
-                    Image = conversionDilation(Image, checkeredcheckbox);
+                    Image = conversionErosion(Image, checkeredcheckbox, true);
+                    Image = conversionDilation(Image, checkeredcheckbox, true);
                     break;
                 case "closing":
-                    Image = conversionDilation(Image, checkeredcheckbox);
-                    Image = conversionErosion(Image, checkeredcheckbox);
+                    Image = conversionDilation(Image, checkeredcheckbox, true);
+                    Image = conversionErosion(Image, checkeredcheckbox, true);
                     break;
                 case "complement":
                     Image = conversionComplement(Image);
@@ -285,21 +285,24 @@ namespace INFOIBV
 
         private Color[,] applyPipeline(Color[,] image)
         {
+            Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
             //image = conversionGaussian(image, 2, 5);
+            //progressPicture(image);
+            //progressBar.Value = 1
+            image = conversionPercentageThreshold(image);
             progressPicture(image);
             progressBar.Value = 1;
-            //TODO Implement automatic Thresholding
-            //image = conversionThreshold(image, 120);
-            image = conversionThresholdBernsen(image, 15);
+            compareImage = image.Clone() as Color[,]; //for geodesic dilation
+            compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
+            compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
+            image = conversionEdgeDetection(image);
             progressPicture(image);
             progressBar.Value = 1;
-            //image = conversionEdgeDetection(image);
+            image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
-            progressBar.Value = 1;
-            //image = conversionThreshold(image, 180);
             progressBar.Value = 1;
             return image;
         }
@@ -792,25 +795,25 @@ namespace INFOIBV
         }
         
         //Applies a geodesic erosion to an image, given a check image
-        private Color[,] conversionGeodesicErosion(Color[,] image, bool isBinary, Color[,] checkImage)
+        private Color[,] conversionGeodesicErosion(Color[,] image, bool isBinary, Color[,] checkImage, bool newKernel)
         {
-            return conversionMax(conversionErosion(image, isBinary), checkImage);
+            return conversionMax(conversionErosion(image, isBinary, newKernel), checkImage);
         }
 
         //Applies a geodesic dilation to an image, given a check image
-        private Color[,] conversionGeodesicDilation(Color[,] image, bool isBinary, Color[,] checkImage)
+        private Color[,] conversionGeodesicDilation(Color[,] image, bool isBinary, Color[,] checkImage, bool newKernel)
         {
-            return conversionMin(conversionDilation(image, isBinary), checkImage);
+            return conversionMin(conversionDilation(image, isBinary, newKernel), checkImage);
         }
 
         //Acts as a switch between erosiojn applied to a binary or grayscale image
-        private Color[,] conversionErosion(Color[,] image, bool isBinary)
+        private Color[,] conversionErosion(Color[,] image, bool isBinary, bool newKernel)
         {
             try
             {
                 if (isBinary)
                 {
-                    var kernel = convertInputToTuplesBinary();
+                    var kernel = convertInputToTuplesBinary(newKernel);
                     return conversionErosionBinary(image, kernel);
                 }
                 else
@@ -828,14 +831,14 @@ namespace INFOIBV
         }
 
         //Acts as a switch between dilation applied to a binary or grayscale image
-        private Color[,] conversionDilation(Color[,] image, bool isBinary)
+        private Color[,] conversionDilation(Color[,] image, bool isBinary, bool newKernel)
         {
             
                 try
                 {
                     if (isBinary)
                     {
-                        var kernel = convertInputToTuplesBinary();
+                        var kernel = convertInputToTuplesBinary(newKernel);
                         return conversionDilationBinary(image, kernel);
                     }
                     else
@@ -1326,22 +1329,30 @@ namespace INFOIBV
             return Tuple.Create(histogramRed, histogramGreen, histogramBlue);
         }
 
-        private Tuple<int, int>[] convertInputToTuplesBinary()
+        private Tuple<int, int>[] convertInputToTuplesBinary(Boolean newKernel)
         {
-            var allCoordinates = richTextBox1.Text;
-            var coordinatePairs = allCoordinates.Split(' ');
-            var coordinateTupleArray = new Tuple<int, int>[coordinatePairs.Length];
-            for (var x = 0; x < coordinatePairs.Length; x++)
+            if (newKernel)
+            { 
+                var allCoordinates = richTextBox1.Text;
+                var coordinatePairs = allCoordinates.Split(' ');
+                var coordinateTupleArray = new Tuple<int, int>[coordinatePairs.Length];
+                for (var x = 0; x < coordinatePairs.Length; x++)
+                {
+                    var coordinates = coordinatePairs[x].Split(',');
+                    int xCoordinate = Convert.ToInt16(coordinates[0]);
+                    int yCoordinate = Convert.ToInt16(coordinates[1]);
+                    coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate);
+                    String debugMessage = "Structuring element binary: X: " + xCoordinate + " Y: " + yCoordinate;
+                    Debugger.debug(2, debugMessage);
+                }
+
+                return coordinateTupleArray;
+            }
+            else
             {
-                var coordinates = coordinatePairs[x].Split(',');
-                int xCoordinate = Convert.ToInt16(coordinates[0]);
-                int yCoordinate = Convert.ToInt16(coordinates[1]);
-                coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate);
-                String debugMessage = "Structuring element binary: X: " + xCoordinate + " Y: " + yCoordinate;
-                Debugger.debug(2, debugMessage);
+                return new Tuple<int, int>[5] { new Tuple<int, int>(-1, 0), new Tuple<int, int>(0, -1), new Tuple<int, int>(0, 0), new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1) };
             }
 
-            return coordinateTupleArray;
         }
 
         private Tuple<int, int, int>[] convertInputToTuplesGrayscale()
