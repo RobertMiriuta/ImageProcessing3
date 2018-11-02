@@ -285,6 +285,7 @@ namespace INFOIBV
 
         private Color[,] applyPipeline(Color[,] image)
         {
+            //Start Phase1
             Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -304,6 +305,8 @@ namespace INFOIBV
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
+            //End Phase1
+
             return image;
         }
 
