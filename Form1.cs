@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using System.Xml.Serialization;
 
 namespace INFOIBV
 
@@ -216,6 +217,7 @@ namespace INFOIBV
                     //Here the magic happens
                     Image = applyPipeline(Image);
                     //Jk it's still trash
+                    Image = conversionHough(Image, 180);
                     break;
                 default:
                     Debugger.debug(1, "Nothing matched");
@@ -602,6 +604,72 @@ namespace INFOIBV
             return image;
         }
 
+        private Color[,] conversionHough(Color[,] image, int accuracy)
+        {
+            double stepSize = 180.0 / accuracy;
+            int diagonal = (int) Math.Sqrt((InputImage.Size.Width * InputImage.Size.Width) + (InputImage.Size.Height * InputImage.Size.Height));
+            int[,] houghGraph = new int[diagonal, 180];
+            for(int x = 0; x < InputImage.Size.Width; x++)
+                for(int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    if(image[x,y].R == 255)
+                    { 
+                        for (double angle = 0; angle < 180; angle += stepSize)
+                        {
+                            int theta = convertToRadians((int) angle);
+                            int r = (int) (x * Math.Sin(theta) + y * Math.Cos(theta));
+                            if (r > 0)
+                            {
+                                houghGraph[r, (int) angle]++;
+                            }
+                        }
+                    }
+                }
+
+            return imageFromHoughGraph(houghGraph);
+        }
+
+        private Color[,] imageFromHoughGraph(int[,] graph)
+        {
+            Color[,] outputimage = makeBinaryImage();
+            double xFactor = InputImage.Size.Width / 180.0;
+            double diagonal = Math.Sqrt((InputImage.Size.Width * InputImage.Size.Width) + (InputImage.Size.Height * InputImage.Size.Height));
+            double yFactor = InputImage.Size.Height / diagonal;
+            for (int r = 0; r < graph.GetLength(0); r++)
+            {
+                for (int theta = 0; theta < graph.GetLength(1); theta++)
+                {
+                    int valueFromGraph = graph[r, theta];
+                    if (valueFromGraph > 0)
+                    {
+                        int x = (int) (xFactor * theta);
+                        int y = (int) (yFactor * r);
+                        if (x > InputImage.Size.Width -1)
+                        {
+                            x = InputImage.Size.Width - 1;
+                        }
+                        if (y > InputImage.Size.Height - 1)
+                        {
+                            x = InputImage.Size.Height - 1;
+                        }
+
+                        int newsomething = valueFromGraph * 10;
+                        if (newsomething > 255)
+                        {
+                            newsomething = 255;
+
+                        }
+                        Color newColor = Color.FromArgb(newsomething, newsomething, newsomething);
+                        outputimage[x, y] = newColor;
+                    }
+                }
+            }
+            return outputimage;
+        }
+        private int convertToRadians(int degree)
+        {
+            return (int) (degree * (Math.PI / 180.0));
+        }
         private Color[,] conversionGaussian(Color[,] image, double sigma, int size)
         {
             double[,] gaussianFilter = createGaussianFilter(sigma, size);
@@ -1168,7 +1236,7 @@ namespace INFOIBV
         //Checks if two images are of the same size
         private bool isImageSameSize(Color[,] image1, Color[,] image2)
         {
-            Console.WriteLine(image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
+            Debugger.debug(2, image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
             if (image1.GetLength(0) != image2.GetLength(0) || image1.GetLength(1) != image2.GetLength(1)
             ) //images should be of the same size
             {
