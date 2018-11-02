@@ -388,6 +388,11 @@ namespace INFOIBV
             return conversionThreshold(image, 180); //default threshold
         }
 
+        private double calcCircularity(double area, double perimeter)
+        {
+            return Math.PI * 4 * area / (perimeter * perimeter);
+        }
+
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
             int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
