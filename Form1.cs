@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Xml.Serialization;
+using System.Xml.Xsl;
 
 namespace INFOIBV
 
@@ -307,11 +308,11 @@ namespace INFOIBV
             progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
-            progressBar.Value = 1; 
+            progressBar.Value = 1;
             //End Phase1
             //Start Phase2
             int accuracy = 600;
-            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
+            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110);
             image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
 
             return image;
@@ -819,7 +820,6 @@ namespace INFOIBV
                             if (r >= 0 && r < nRad)
                             {
                                 houghGraph[step, r]++;
-
                             }
 
                         }
@@ -850,7 +850,7 @@ namespace INFOIBV
                         }
                         if (y > InputImage.Size.Height - 1)
                         {
-                            x = InputImage.Size.Height - 1;
+                            y = InputImage.Size.Height - 1;
                         }
                         if (valueFromGraph > 255)
                         {
