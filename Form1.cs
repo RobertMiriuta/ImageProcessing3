@@ -310,6 +310,26 @@ namespace INFOIBV
             return image;
         }
 
+        private int[,] labelShapes(Color[,] image)
+        {
+            int backgroundNumber = 0;
+            int unlabeledNumber = 1;
+            int[,] shapes = new int[image.GetLength(0), image.GetLength(1)];
+            //Initialize shapes array with 0 for background and 1 for foreground
+            for(int x = 0; x < image.GetLength(0); x++)
+            {
+                for(int y = 0; y < image.GetLength(1); y++)
+                {
+                    if (image[x, y] == Color.FromArgb(255, 255, 255))
+                        shapes[x, y] = 1;
+                    else
+                        shapes[x, y] = 0;
+                }
+            }
+
+            return shapes; //TODO implement
+        }
+
         private Color[,] conversionThresholdBernsen(Color[,] image, int contrastThreshold)
         {
             int size = 3;
