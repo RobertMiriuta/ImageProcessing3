@@ -310,6 +310,7 @@ namespace INFOIBV
             return image;
         }
 
+        //Operates on binary images
         private int[,] labelShapes(Color[,] image)
         {
             int backgroundNumber = 0;
