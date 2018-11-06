@@ -312,7 +312,7 @@ namespace INFOIBV
             //End Phase1
             //Start Phase2
             int accuracy = 600;
-            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110);
+            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
             image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
 
             return image;
