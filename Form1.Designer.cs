@@ -177,6 +177,7 @@
             this.comboBox1.Items.AddRange(new object[] {
             "negative",
             "grayscale",
+            "shape labeling",
             "contrastadjustment",
             "gaussian",
             "threshold",
