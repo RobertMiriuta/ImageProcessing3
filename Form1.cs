@@ -5,6 +5,8 @@ using System.Linq;
 using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using System.Xml.Serialization;
+using System.Xml.Xsl;
 
 namespace INFOIBV
 
@@ -289,6 +291,8 @@ namespace INFOIBV
         private Color[,] applyPipeline(Color[,] image)
         {
             //Start Phase1
+            Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
+
             Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -309,6 +313,10 @@ namespace INFOIBV
             progressPicture(image);
             progressBar.Value = 1;
             //End Phase1
+            //Start Phase2
+            int accuracy = 600;
+            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
+            image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
 
             return image;
         }
@@ -713,6 +721,266 @@ namespace INFOIBV
             return image;
         }
 
+        private Color[,] drawLinesFromHoughOnImage(List<Tuple<int, int>> coordinates, int accuracy, Color[,] image)
+        {
+            Console.WriteLine("Amount of coordinates is " + coordinates.Count);
+            foreach (var element in coordinates)
+            {
+                int theta = element.Item1;
+                int r = element.Item2;
+                int previousy = 0;
+                for (int x = 0; x < InputImage.Size.Width; x++)
+                {
+                    if (x == 0)
+                    {
+                        previousy = getYfromTheta(theta, r, accuracy, x);
+                    }
+                    try
+                    {
+                        
+                        int y = getYfromTheta(theta, r, accuracy, x);
+                        int ydelta = y - previousy;
+                        if (!(y > InputImage.Size.Height || y < 0))
+                        {
+                            if (ydelta < 0 && y != previousy)
+                            {
+                                    for (int pointer = previousy; y < pointer; pointer--)
+                                    {
+                                        try
+                                        {
+                                            image[x, pointer] = Color.FromArgb(57, 255, 20);
+                                        }
+                                        catch (IndexOutOfRangeException)
+                                        {
+                                            Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, negative ydelta");
+                                        }
+
+                                }
+                            }
+                            else if (ydelta > 0 && y != previousy)
+                            {
+                                    for (int pointer = previousy; y > pointer; pointer++)
+                                    {
+                                        try
+                                        {
+                                            image[x, pointer] = Color.FromArgb(57, 255, 20);
+                                        }
+                                        catch (IndexOutOfRangeException)
+                                        {
+                                            Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
+                                        }
+                                    }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    image[x, y] = Color.FromArgb(57, 255, 20);
+                                }
+                                catch (IndexOutOfRangeException)
+                                {
+                                    Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
+                                }
+                            }
+                        }
+
+                        previousy = y;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage");
+                    }
+                }
+
+                
+
+            }
+            return image;
+        }
+
+        private int getYfromTheta(int step, int r, int accuracy, int x)
+        {
+            int xCtr = InputImage.Size.Width / 2;
+            int yCtr = InputImage.Size.Height / 2;
+            int cRad = accuracy / 2;
+            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
+            double dRad = (2.0 * rMax) / accuracy;
+            double theta = step * (Math.PI/accuracy);
+            int newx = x - xCtr;
+
+            return (int) ((((r - cRad) * dRad) - (newx * Math.Cos(theta))) / Math.Sin(theta)) + yCtr;
+        }
+
+        private List<Tuple<int, int>> getCoordinatesWhitePixels(int[,] houghGraph)
+        {
+            List<Tuple<int,int>> coordinates = new List<Tuple<int, int>>();
+            for (int x = 0; x < houghGraph.GetLength(0); x++)
+            {
+                for (int y = 0; y < houghGraph.GetLength(1); y++)
+                {
+                    if (houghGraph[x, y] == 255)
+                    {
+                        Tuple<int, int> coordinate = new Tuple<int, int>(x, y);
+                        coordinates.Add(coordinate);
+                    }
+                }
+            }
+            return coordinates;
+        }
+
+        private int[,] nonMaxSupression(int[,] houghGraph)
+        {
+            int filterx = 3;
+            int filtery = 3;
+            int halfsizex = (filterx - 1) / 2;
+            int halfsizey = (filtery - 1) / 2;
+            List<int> values;
+            for (int theta = 0; theta < houghGraph.GetLength(0); theta++)
+            {
+                for (int r = 0; r < houghGraph.GetLength(1); r++)
+                {
+                    values = new List<int>();
+                    for (int x = -halfsizex; x < halfsizex; x++)
+                    {
+                        for (int y = -halfsizey; y < halfsizex; y++)
+                        {
+                            int transformedx = x + theta;
+                            int transformedy = y + r;
+                            try
+                            {
+                                values.Add(houghGraph[transformedx, transformedy]);
+                            }
+                            catch (IndexOutOfRangeException)
+                            {
+                                Debugger.debug(2, "Index out of range exception thrown in the nonMaxSupression");
+                            }
+                        }
+                    }
+
+                    int maximumvalue = getMaximumValue(values);
+
+                    for (int x = -halfsizex; x < halfsizex; x++)
+                    {
+                        for (int y = -halfsizey; y < halfsizex; y++)
+                        {
+                            int transformedx = x + theta;
+                            int transformedy = y + r;
+                            try
+                            {
+                                if (houghGraph[transformedx, transformedy] != maximumvalue)
+                                {
+                                    houghGraph[transformedx, transformedy] = 0;
+                                }
+                            }
+                            catch (IndexOutOfRangeException)
+                            {
+                                Debugger.debug(2, "Index out of range exception thrown in the nonMaxSupression");
+                            }
+                        }
+                    }
+                }
+            }
+
+            return houghGraph;
+        }
+
+        private int[,] thresholdHoughGraph(int[,] houghGraph, int threshold)
+        {
+            for (int theta = 0; theta < houghGraph.GetLength(0); theta++)
+            {
+                for (int r = 0; r < houghGraph.GetLength(1); r++)
+                {
+                    if (!(houghGraph[theta, r] > threshold))
+                    {
+                        houghGraph[theta, r] = 0;
+                    }
+                    else
+                    {
+                        houghGraph[theta, r] = 255;
+                    }
+                }
+            }
+
+            return houghGraph;
+        }
+
+        private int[,] conversionHough(Color[,] image, int accuracy)
+        {
+            int xCtr = InputImage.Size.Width / 2;
+            int yCtr = InputImage.Size.Height / 2;
+            int nAng = accuracy;
+            double dAng = Math.PI / nAng;
+            int nRad = accuracy;
+            int cRad  = nRad / 2;
+            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
+            double dRad = (2.0 * rMax) / nRad;
+            int[,] houghGraph = new int[nAng, nRad];
+            
+            for(int u = 0; u < InputImage.Size.Width; u++)
+            {
+                int x = u - xCtr;
+                for(int v = 0; v < InputImage.Size.Height; v++)
+                {
+                    int y = v - yCtr;
+                    if(image[u,v].R == 255)
+                    { 
+                        for (int step = 0; step < nAng; step++)
+                        {
+                            double theta = dAng * step;
+                            int r = cRad + (int) Math.Round((x * Math.Cos(theta) + (y * Math.Sin(theta)))/dRad);
+                            if (r >= 0 && r < nRad)
+                            {
+                                houghGraph[step, r]++;
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            return houghGraph;
+        }
+
+        private Color[,] imageFromHoughGraph(int[,] graph)
+        {
+            Color[,] outputimage = makeBinaryImage();
+            double xFactor = (double) InputImage.Size.Width / graph.GetLength(0);
+            double yFactor = (double) InputImage.Size.Height / graph.GetLength(1);
+            for (int theta = 0; theta < graph.GetLength(0); theta++)
+            {
+                for (int r = 0; r < graph.GetLength(1); r++)
+                {
+                    int valueFromGraph = graph[theta, r];
+                    if (valueFromGraph > 0)
+                    {
+                        int x = (int) (xFactor * theta);
+                        int y = (int) (yFactor * r);
+                        if (x > InputImage.Size.Width -1)
+                        {
+                            x = InputImage.Size.Width - 1;
+                        }
+                        if (y > InputImage.Size.Height - 1)
+                        {
+                            y = InputImage.Size.Height - 1;
+                        }
+                        if (valueFromGraph > 255)
+                        {
+                            valueFromGraph = 255;
+
+                        }
+                        Color newColor = Color.FromArgb(valueFromGraph, valueFromGraph, valueFromGraph);
+                        outputimage[x, y] = newColor;
+                    }
+                }
+            }
+            return outputimage;
+        }
+
+        private double convertToRadians(double degree)
+        {
+            return (degree * (Math.PI / 180.0));
+        }
+
         private Color[,] conversionGaussian(Color[,] image, double sigma, int size)
         {
             double[,] gaussianFilter = createGaussianFilter(sigma, size);
@@ -880,6 +1148,7 @@ namespace INFOIBV
             }
             return newImage;
         }
+
         private int getColorAtPercentileLowFromHistogram(int[] histogram_array, int percentile)
         {
             for (int i = 0; i < 255; i++)
@@ -1279,7 +1548,7 @@ namespace INFOIBV
         //Checks if two images are of the same size
         private bool isImageSameSize(Color[,] image1, Color[,] image2)
         {
-            Console.WriteLine(image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
+            Debugger.debug(2, image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
             if (image1.GetLength(0) != image2.GetLength(0) || image1.GetLength(1) != image2.GetLength(1)
             ) //images should be of the same size
             {
