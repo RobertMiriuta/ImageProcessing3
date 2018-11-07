@@ -5,6 +5,7 @@ using System.Text;
 
 namespace INFOIBV
 {
+    //union find is cool
     public class UF
     {
         public int[] id { get; set; }

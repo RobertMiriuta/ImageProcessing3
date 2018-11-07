@@ -315,14 +315,18 @@ namespace INFOIBV
 
         private Color[,] conversionShapeLabeling(Tuple<int[,],int> shapesAndAmount)
         {
+            Random rnd = new Random();
+            int ranNum1 = rnd.Next(1, 255);
+            int ranNum2 = rnd.Next(1, 255);
+            int ranNum3 = rnd.Next(1, 255);
             int colorStep = (int) (255.0 / shapesAndAmount.Item2);
             Color[,] outputImage = new Color[shapesAndAmount.Item1.GetLength(0), shapesAndAmount.Item1.GetLength(1)];
             for (int x = 0; x < shapesAndAmount.Item1.GetLength(0); x++)
             {
                 for (int y = 0; y < shapesAndAmount.Item1.GetLength(1); y++)
                 {
-                    outputImage[x, y] = Color.FromArgb(((shapesAndAmount.Item1[x, y] * 6) * colorStep) % 255,
-                        ((shapesAndAmount.Item1[x, y] * 5) * colorStep) % 255, ((shapesAndAmount.Item1[x, y] * 7) * colorStep) % 255);
+                    outputImage[x, y] = Color.FromArgb(((shapesAndAmount.Item1[x, y] * ranNum1) * colorStep) % 255,
+                        ((shapesAndAmount.Item1[x, y] * ranNum2) * colorStep) % 255, ((shapesAndAmount.Item1[x, y] * ranNum3) * colorStep) % 255);
                 }
             }
             return outputImage;
