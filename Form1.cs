@@ -292,7 +292,6 @@ namespace INFOIBV
         {
             //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
-
             Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -314,10 +313,12 @@ namespace INFOIBV
             progressBar.Value = 1;
             //End Phase1
             //Start Phase2
-            int accuracy = 600;
-            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
-            image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-
+            //int accuracy = 600;
+            //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
+            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
+            image = conversionShapeLabeling(labelShapes(image));
+            progressPicture(image);
+            progressBar.Value = 1;
             return image;
         }
 
@@ -358,7 +359,7 @@ namespace INFOIBV
                 }
             }
 
-            UF connectionTree = new UF(100); //probably less than 100 shapes
+            UF connectionTree = new UF(1000); //probably less than 100 shapes
 
             //top left to bottom right
             for (int y = 0; y < shapes.GetLength(1); y++)
