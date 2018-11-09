@@ -238,7 +238,7 @@ namespace INFOIBV
                     Image = applyPhaseOne(Image);
                     break;
                 case "phase two":
-                    Image = applyPhaseTwo(Image);
+                    Image = applyPhaseTwo(Image, Image);
                     break;
                 case "phase three":
                     Image = applyPhaseThree(Image);
@@ -363,8 +363,9 @@ namespace INFOIBV
 
         private Color[,] applyPipeline(Color[,] image)
         {
+            Color[,] ogImage = (Color[,]) image.Clone();
             image = applyPhaseOne(image);
-            image = applyPhaseTwo(image);
+            image = applyPhaseTwo(image, ogImage);
             return applyPhaseThree(image);
         }
 
