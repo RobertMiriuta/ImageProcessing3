@@ -134,6 +134,9 @@ namespace INFOIBV
                 case "negative":
                     Image = conversionNegative(Image);
                     break;
+                case "shape labeling":
+                    Image = conversionShapeLabeling(labelShapes(Image));
+                    break;
                 case "contrastadjustment":
                     double percentage = Convert.ToDouble(textBox1.Text);
                     if (percentage >= 0.50)
@@ -289,7 +292,6 @@ namespace INFOIBV
         {
             //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
-
             Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -303,19 +305,124 @@ namespace INFOIBV
             compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
-            image = conversionEdgeDetection(image);
-            progressPicture(image);
-            progressBar.Value = 1;
+            //image = conversionEdgeDetection(image);
+            //progressPicture(image);
+            //progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
             //End Phase1
             //Start Phase2
-            int accuracy = 600;
-            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
-            image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-
+            //int accuracy = 600;
+            //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
+            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
+            image = conversionShapeLabeling(labelShapes(image));
+            progressPicture(image);
+            progressBar.Value = 1;
             return image;
+        }
+
+        private Color[,] conversionShapeLabeling(Tuple<int[,],int> shapesAndAmount)
+        {
+            Random rnd = new Random();
+            int ranNum1 = rnd.Next(1, 255);
+            int ranNum2 = rnd.Next(1, 255);
+            int ranNum3 = rnd.Next(1, 255);
+            int colorStep = (int) (255.0 / shapesAndAmount.Item2);
+            Color[,] outputImage = new Color[shapesAndAmount.Item1.GetLength(0), shapesAndAmount.Item1.GetLength(1)];
+            for (int x = 0; x < shapesAndAmount.Item1.GetLength(0); x++)
+            {
+                for (int y = 0; y < shapesAndAmount.Item1.GetLength(1); y++)
+                {
+                    outputImage[x, y] = Color.FromArgb(((shapesAndAmount.Item1[x, y] * ranNum1) * colorStep) % 255,
+                        ((shapesAndAmount.Item1[x, y] * ranNum2) * colorStep) % 255, ((shapesAndAmount.Item1[x, y] * ranNum3) * colorStep) % 255);
+                }
+            }
+            return outputImage;
+        }
+        //Operates on binary images
+        private Tuple<int[,],int> labelShapes(Color[,] image)
+        {
+            int backgroundNumber = 0;
+            int unlabeledNumber = 1;
+            int currentLabelNumber = 2;
+            int[,] shapes = new int[image.GetLength(0), image.GetLength(1)];
+            //Initialize shapes array with 0 for background and 1 for foreground
+            for(int x = 0; x < image.GetLength(0); x++)
+            {
+                for(int y = 0; y < image.GetLength(1); y++)
+                {
+                    if (image[x, y] == Color.FromArgb(255, 255, 255))
+                        shapes[x, y] = unlabeledNumber;
+                    else
+                        shapes[x, y] = backgroundNumber;
+                }
+            }
+
+            UF connectionTree = new UF(1000); //probably less than 100 shapes
+
+            //top left to bottom right
+            for (int y = 0; y < shapes.GetLength(1); y++)
+            {
+                for (int x = 0; x < shapes.GetLength(0); x++)
+                {
+                    if(shapes[x, y] != backgroundNumber)
+                    {
+                        try
+                        {
+                            if ((x + y) % 100 == 0)
+                            {
+                                Console.WriteLine(shapes[x, y] + "processing this with currentlabel being " + currentLabelNumber);
+                            }
+                            int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
+                            if (topNeighborhood.Max() == 0) //first pixel of shape
+                            {
+                                shapes[x, y] = currentLabelNumber++;
+                            }
+                            else //grow shape
+                            {
+                                shapes[x, y] = topNeighborhood.Max();
+                                List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
+                                if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
+                                {
+                                    foreach (var elem in unionLabels)
+                                        connectionTree.merge(elem, topNeighborhood.Max());
+                                }
+                            }
+                            
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            Debugger.debug(2, "Shape Labeliing: An Index was out of Range");
+                        }
+                    }
+                }
+            }
+            //resolve collisions
+            for (int y = 0; y < shapes.GetLength(1); y++)
+            {
+                for (int x = 0; x < shapes.GetLength(0); x++)
+                {
+                    shapes[x, y] = connectionTree.find(shapes[x, y]);
+                    if ((x+y)%100 == 0)
+                    {
+                        Console.WriteLine(shapes[x, y] + "and found shape" + connectionTree.find(shapes[x, y]));
+                    }
+                }
+            }
+            return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
+        }
+        private List<int> getLabelFromNeighbourhood(int[] neighbourhood)
+        {
+            List<int> output = new List<int>();
+            foreach (var element in neighbourhood)
+            {
+                if (element != 0 && element != 1)
+                {
+                    output.Add(element);
+                }
+            }
+            return output;
         }
 
         private Color[,] conversionThresholdBernsen(Color[,] image, int contrastThreshold)
