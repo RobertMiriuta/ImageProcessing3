@@ -401,6 +401,8 @@ namespace INFOIBV
             return Math.PI * 4 * area / (perimeter * perimeter);
         }
 
+
+
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
             int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
@@ -796,6 +798,30 @@ namespace INFOIBV
             }
 
             return houghGraph;
+        }
+
+        private int[,] applyClosingToTresholdedHoughGraph(int[,] houghGraph)
+        {
+            int[,] octaneighborhood = {{-1,-1}, {-1,0}, {-1,1}, { 0, -1 }, { 0, 0 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } };
+            int[,] houghGraphDilated = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)]; 
+            for (int step = 0; step < houghGraph.GetLength(0); step++)
+            for (int r = 0; r < houghGraph.GetLength(1); r++)
+            {
+                if (houghGraph[steps, r] == 255)
+                {
+                    for (var structureIndexX = 0; structureIndexX < octaneighborhood.GetLength(0); structureIndexX++)
+                    for (var structureIndexY = 0; structureIndexY < octaneighborhood.GetLength(0); structureIndexY++)
+                    {
+                        var structureStep = step + kernel[structureIndex].Item1;
+                        var structureR = y + kernel[structureIndex].Item2;
+
+                        if (!(structureX < 0 || structureY < 0 || structureY > InputImage.Size.Height - 1 ||
+                              structureX > InputImage.Size.Width - 1))
+                            houghGraphDilated[structureX, structureY] = Color.FromArgb(255, 255, 255);
+                    }
+                }
+            }
+
         }
 
         private int[,] conversionHough(Color[,] image, int accuracy)
