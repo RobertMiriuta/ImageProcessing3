@@ -20,6 +20,14 @@ namespace INFOIBV
             new Tuple<int, int>(-1, 1), new Tuple<int, int>(-1, 0)
         };
 
+        private readonly Tuple<int, int>[] counterClockwiseRotation =
+        {
+            new Tuple<int, int>(1, 0), new Tuple<int, int>(1, -1), new Tuple<int, int>(0, -1),
+            new Tuple<int, int>(-1, -1), new Tuple<int, int>(-1, 0), new Tuple<int, int>(-1, -1),
+            new Tuple<int, int>(0, 1), new Tuple<int, int>(1, 1)
+        };
+
+
         private Bitmap InputImage;
         private Bitmap OutputImage;
 
@@ -292,7 +300,6 @@ namespace INFOIBV
         {
             //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
-            Color[,] compareImage = new Color[image.GetLength(0), image.GetLength(1)];
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
@@ -302,21 +309,22 @@ namespace INFOIBV
             image = conversionPercentageThreshold(image);
             progressPicture(image);
             progressBar.Value = 1;
-            compareImage = image.Clone() as Color[,]; //for geodesic dilation
-            compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
-            compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
+            Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
+            //compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
+            //compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
             //image = conversionEdgeDetection(image);
             //progressPicture(image);
             //progressBar.Value = 1;
-            image = conversionGeodesicDilation(image, true, compareImage, false);
-            progressPicture(image);
-            progressBar.Value = 1;
+            //image = conversionGeodesicDilation(image, true, compareImage, false);
+            //progressPicture(image);
+            //progressBar.Value = 1;
             //End Phase1
             //Start Phase2
             //int accuracy = 600;
             //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
             //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-            image = conversionShapeLabeling(labelShapes(image));
+            //image = conversionShapeLabeling(labelShapes(image));
+            var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
             progressPicture(image);
             progressBar.Value = 1;
             return image;
@@ -404,10 +412,6 @@ namespace INFOIBV
                 for (int x = 0; x < shapes.GetLength(0); x++)
                 {
                     shapes[x, y] = connectionTree.find(shapes[x, y]);
-                    if ((x+y)%100 == 0)
-                    {
-                        Console.WriteLine(shapes[x, y] + "and found shape" + connectionTree.find(shapes[x, y]));
-                    }
                 }
             }
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
@@ -425,6 +429,70 @@ namespace INFOIBV
             return output;
         }
 
+        private List<List<int>> calcRunLengthEncodingMany(int[,] labeledShapes)
+        {
+            List<Color[,]> subimages = new List<Color[,]>();
+            List<List<int>> outputEncodings = new List<List<int>>();
+
+            List<int> labels = getLabelsFromIntMatrix(labeledShapes);
+
+            foreach (var label in labels)
+            {
+                Color[,] currImage = makeBinaryImage(labeledShapes.GetLength(0), labeledShapes.GetLength(1));
+                for(int x = 0; x < labeledShapes.GetLength(0); x++)
+                {
+                    for(int y = 0; y < labeledShapes.GetLength(1); y++)
+                    {
+                        if (labeledShapes[x, y] == label)
+                            currImage[x, y] = Color.White;
+                    }
+                }
+                subimages.Add(currImage);
+            }
+
+            foreach(var image in subimages)
+                outputEncodings.Add(calcRunLengthEnncodingSingleImage(image));
+            
+
+            return outputEncodings;
+        }
+
+        private List<int> calcRunLengthEnncodingSingleImage(Color[,] shape)
+        {
+            var startPoint = getStartPoint(shape);
+            var startPointx = startPoint.Item1;
+            var startPointy = startPoint.Item2;
+            var listOfThings = getShapeCoordinates(shape, startPointx, startPointy);
+            
+            List<int> runLengthCode = new List<int>();
+            for (var x = 1; x < listOfThings.Count - 1; x++)
+            {
+                var newPt = new Tuple<int, int>(listOfThings.ElementAt(x + 1).Item1 - listOfThings.ElementAt(x).Item1,
+                                                    listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
+                runLengthCode.Add(getIndexAtElem(newPt));
+            }
+
+            foreach(var elem in runLengthCode)
+                Console.Write(elem);
+            Console.WriteLine("");
+            return runLengthCode;
+        }
+
+        private List<int> getLabelsFromIntMatrix(int[,] labeledShapes)
+        {
+            List<int> labels = new List<int>();
+
+            for (int x = 0; x < labeledShapes.GetLength(0); x++)
+            {
+                for (int y = 0; y < labeledShapes.GetLength(1); y++)
+                {
+                    int num = labeledShapes[x, y];
+                    if (!labels.Contains(num) && num != 0 && num != 1)
+                        labels.Add(num);
+                }
+            }
+            return labels;
+        }
         private Color[,] conversionThresholdBernsen(Color[,] image, int contrastThreshold)
         {
             int size = 3;
@@ -487,6 +555,18 @@ namespace INFOIBV
 
             }
             return image;
+        }
+
+        private int getIndexAtElem(Tuple<int, int> coordinate)
+        {
+            if (counterClockwiseRotation.Contains(coordinate))
+            {
+                for (int i = 0; i < counterClockwiseRotation.Length; i++)
+                {
+                    if (counterClockwiseRotation.ElementAt(i).Equals(coordinate)) return i;
+                }
+            }
+            return -1;
         }
 
         private Color[,] conversionPercentageThreshold(Color[,] image)
@@ -1514,6 +1594,27 @@ namespace INFOIBV
 
             return listOfCoordinates;
         }
+        private List<Tuple<int, int>> getShapeCoordinates(int[,] image, int startx, int starty)
+        {
+            var listOfCoordinates = new List<Tuple<int, int>>();
+            listOfCoordinates.Add(new Tuple<int, int>(startx, starty));
+            int currentx = startx;
+            int currenty = starty;
+            bool done = false;
+            int direction = 1;
+            while (!done)
+            {
+                direction = (direction + 6) % 8;
+                direction = getNextPoint(image, currentx, currenty, direction);
+                if (direction > 8) break; //No next point could be found, so break
+                currentx = currentx + clockwiseRotation[direction].Item1;
+                currenty = currenty + clockwiseRotation[direction].Item2;
+                done = currentx == startx && currenty == starty;
+                if (!done) listOfCoordinates.Add(new Tuple<int, int>(currentx, currenty));
+            }
+
+            return listOfCoordinates;
+        }
 
         //Counts the amount of distinct values of the InputImage ;we assume that the image is a grayscale
         //Will count the amount of distinct red values when applied to a colored image
@@ -1569,6 +1670,16 @@ namespace INFOIBV
             for (var x = 0; x < InputImage.Size.Width; x++)
             for (var y = 0; y < InputImage.Size.Height; y++)
                 newBinaryImage[x, y] = Color.Black;
+
+            return newBinaryImage;
+        }
+
+        private Color[,] makeBinaryImage(int sizex, int sizey)
+        {
+            var newBinaryImage = new Color[sizex, sizey];
+            for (var x = 0; x < sizex; x++)
+                for (var y = 0; y < sizey; y++)
+                    newBinaryImage[x, y] = Color.Black;
 
             return newBinaryImage;
         }
@@ -1634,6 +1745,29 @@ namespace INFOIBV
             return 8; //Impossible value, if no other pixel has been found.
         }
 
+        private int getNextPoint(int[,] image, int currentX, int currentY, int dir)
+        {
+            for (var y = 0; y < clockwiseRotation.Length; y++)
+            {
+                int direction = (y + dir) % 8;
+                int structureX = currentX + clockwiseRotation[direction].Item1;
+                int structureY = currentY + clockwiseRotation[direction].Item2;
+                int colour = 600;
+                try
+                {
+                    colour = image[structureX, structureY];
+                }
+                catch
+                {
+                    Debugger.debug(2, "Exception thrown in getNextPoint, this means the 'pointer' is out of bounds");
+                }
+                if (colour == 255) return direction;
+
+            }
+
+            return 8; //Impossible value, if no other pixel has been found.
+        }
+
         //Traverses the image until a foreground pixel is found, returns the coordinates of the pixel.
         private Tuple<int, int> getStartPoint(Color[,] image)
         {
@@ -1641,6 +1775,16 @@ namespace INFOIBV
             for (var y = 0; y < InputImage.Size.Height; y++)
                 if (image[x, y].R == 255)
                     return new Tuple<int, int>(x, y);
+
+            return null;
+        }
+
+        private Tuple<int,int> getStartPoint(int[,] image)
+        {
+            for (var x = 0; x < image.GetLength(0); x++)
+                for (var y = 0; y < image.GetLength(1); y++)
+                    if (image[x, y] == 255)
+                        return new Tuple<int, int>(x, y);
 
             return null;
         }
