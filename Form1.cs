@@ -20,6 +20,18 @@ namespace INFOIBV
             new Tuple<int, int>(-1, 1), new Tuple<int, int>(-1, 0)
         };
 
+        private int getIndexAtElem(Tuple<int, int> coordinate)
+        {
+            if (clockwiseRotation.Contains(coordinate))
+            {
+                for (int i = 0; i < clockwiseRotation.Length; i++)
+                {
+                    if (clockwiseRotation.ElementAt(i).Equals(coordinate)) return i;
+                }
+            }
+            return -1;
+        }
+
         private Bitmap InputImage;
         private Bitmap OutputImage;
 
@@ -222,6 +234,24 @@ namespace INFOIBV
                     Image = applyPipeline(Image);
                     //Jk it's still trash
                     break;
+                case "phase one":
+                    Image = applyPhaseOne(Image);
+                    break;
+                case "phase two":
+                    Image = applyPhaseTwo(Image);
+                    break;
+                case "phase three":
+                    Image = applyPhaseThree(Image);
+                    break;
+                case "applyFunction1":
+                    Image = testFunction1(Image, Convert.ToInt16(textBox1.Text));
+                    break;
+                case "applyFunction2":
+                    Image = testFunction2(Image, Convert.ToInt16(textBox1.Text));
+                    break;
+                case "applyFunction3":
+                    Image = testFunction3(Image);
+                    break;
                 default:
                     Debugger.debug(1, "Nothing matched");
                     break;
@@ -264,7 +294,6 @@ namespace INFOIBV
                 if (max < bArray[i])
                     max = bArray[i];
             }
-
             histoOut.ChartAreas[0].AxisX.Minimum = 0;
             histoOut.ChartAreas[0].AxisX.Maximum = 255;
 
@@ -288,7 +317,7 @@ namespace INFOIBV
             pictureBox2.Update();
         }
 
-        private Color[,] applyPipeline(Color[,] image)
+        private Color[,] applyPhaseOne(Color[,] image)
         {
             //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
@@ -305,21 +334,63 @@ namespace INFOIBV
             compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
-            //image = conversionEdgeDetection(image);
-            //progressPicture(image);
-            //progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
-            //End Phase1
-            //Start Phase2
-            //int accuracy = 600;
-            //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
-            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-            image = conversionShapeLabeling(labelShapes(image));
+            image = conversionEdgeDetection(image);
             progressPicture(image);
             progressBar.Value = 1;
+            //End Phase1
             return image;
+        }
+
+        private Color[,] applyPhaseTwo(Color[,] image)
+        {
+            //Start Phase2
+            int accuracy = 600;
+
+            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
+            image = imageFromHoughGraph(cleanGraph);
+            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
+            //image = conversionShapeLabeling(labelShapes(image));
+            progressPicture(image);
+            progressBar.Value = 1;
+            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(conversionHough(image, accuracy), 90));
+            image = imageFromHoughGraph(newGraph);
+            return image;
+        }
+
+        private Color[,] applyPhaseThree(Color[,] image)
+        {
+            return image;
+        }
+
+        private Color[,] applyPipeline(Color[,] image)
+        {
+            image = applyPhaseOne(image);
+            image = applyPhaseTwo(image);
+            return applyPhaseThree(image);
+        }
+
+        private Color[,] testFunction1(Color[,] image, int threshold)
+        {
+            int accuracy = 600;
+
+            int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), threshold);
+            return imageFromHoughGraph(cleanGraph);
+        }
+
+        private Color[,] testFunction2(Color[,] image, int threshold)
+        {
+            int accuracy = 600;
+
+            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), threshold));
+            return imageFromHoughGraph(newGraph);
+        }
+
+        private Color[,] testFunction3(Color[,] image)
+        {
+            return imageFromHoughGraph(conversionHough(image, 600));
         }
 
         private Color[,] conversionShapeLabeling(Tuple<int[,],int> shapesAndAmount)
@@ -412,6 +483,7 @@ namespace INFOIBV
             }
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
         }
+
         private List<int> getLabelFromNeighbourhood(int[] neighbourhood)
         {
             List<int> output = new List<int>();
@@ -507,9 +579,7 @@ namespace INFOIBV
         {
             return Math.PI * 4 * area / (perimeter * perimeter);
         }
-
-
-
+        
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
             int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
@@ -862,24 +932,9 @@ namespace INFOIBV
 
                     int maximumvalue = getMaximumValue(values);
 
-                    for (int x = -halfsizex; x < halfsizex; x++)
+                    if (houghGraph[theta, r] != maximumvalue)
                     {
-                        for (int y = -halfsizey; y < halfsizex; y++)
-                        {
-                            int transformedx = x + theta;
-                            int transformedy = y + r;
-                            try
-                            {
-                                if (houghGraph[transformedx, transformedy] != maximumvalue)
-                                {
-                                    houghGraph[transformedx, transformedy] = 0;
-                                }
-                            }
-                            catch (IndexOutOfRangeException)
-                            {
-                                Debugger.debug(2, "Index out of range exception thrown in the nonMaxSupression");
-                            }
-                        }
+                        houghGraph[theta,r] = 0;
                     }
                 }
             }
@@ -909,26 +964,57 @@ namespace INFOIBV
 
         private int[,] applyClosingToTresholdedHoughGraph(int[,] houghGraph)
         {
-            int[,] octaneighborhood = {{-1,-1}, {-1,0}, {-1,1}, { 0, -1 }, { 0, 0 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } };
+            Coordinates kernelList = new Coordinates();
+            kernelList.addCoordinate(-1,-1);
+            kernelList.addCoordinate(-1,0);
+            kernelList.addCoordinate(-1, 1);
+            kernelList.addCoordinate(0, -1);
+            kernelList.addCoordinate(0, 0);
+            kernelList.addCoordinate(0, 1);
+            kernelList.addCoordinate(1, -1);
+            kernelList.addCoordinate(1, 0);
+            kernelList.addCoordinate(1, 1); 
             int[,] houghGraphDilated = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)]; 
             for (int step = 0; step < houghGraph.GetLength(0); step++)
             for (int r = 0; r < houghGraph.GetLength(1); r++)
             {
-                if (houghGraph[steps, r] == 255)
+                if (houghGraph[step, r] == 255)
                 {
-                    for (var structureIndexX = 0; structureIndexX < octaneighborhood.GetLength(0); structureIndexX++)
-                    for (var structureIndexY = 0; structureIndexY < octaneighborhood.GetLength(0); structureIndexY++)
+                    for (var index = 0; index < kernelList.getLength(); index++)
                     {
-                        var structureStep = step + kernel[structureIndex].Item1;
-                        var structureR = y + kernel[structureIndex].Item2;
+                        var structureStep = step + kernelList.getX(index);
+                        var structureR = r + kernelList.getY(index);
 
-                        if (!(structureX < 0 || structureY < 0 || structureY > InputImage.Size.Height - 1 ||
-                              structureX > InputImage.Size.Width - 1))
-                            houghGraphDilated[structureX, structureY] = Color.FromArgb(255, 255, 255);
+                        if (!(structureStep < 0 || structureR < 0 || structureR >= houghGraph.GetLength(1) - 1 ||
+                              structureStep >= houghGraph.GetLength(0) - 1))
+                            houghGraphDilated[structureStep, structureR] = 255;
                     }
                 }
             }
+            int[,] houghGraphEroded = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)];
+            for (int step = 0; step < houghGraph.GetLength(0); step++)
+            for (int r = 0; r < houghGraph.GetLength(1); r++)
+            {
+                if (houghGraph[step, r] == 255)
+                {
+                    var doesKernelFit = true;
+                    for (var index = 0; index < kernelList.getLength(); index++)
+                    {
+                        var structureStep = step + kernelList.getX(index);
+                        var structureR = r + kernelList.getY(index);
 
+                        if (!(structureStep < 0 || structureR < 0 || structureR >= houghGraph.GetLength(1) - 1 ||
+                              structureStep >= houghGraph.GetLength(0) - 1))
+                                doesKernelFit = doesKernelFit && houghGraphDilated[structureStep, structureR] == 255;
+
+                        if (!doesKernelFit) break;
+                    }
+
+                    if (doesKernelFit) houghGraphEroded[step, r] = 255;
+                }
+            }
+
+            return houghGraphEroded;
         }
 
         private int[,] conversionHough(Color[,] image, int accuracy)
@@ -1841,9 +1927,38 @@ namespace INFOIBV
         }
     }
 
-    public class Coordinate
+    public class Coordinates
     {
-        //TODO Implement coordinates to replace Tuple<int,int>
+            public List<Tuple<int,int>> coordinateList { get; set; }
+
+        public Coordinates()
+        {
+            coordinateList = new List<Tuple<int, int>>();
+        }
+
+        public Coordinates(int x, int y)
+        {
+            coordinateList = new List<Tuple<int, int>>();
+            coordinateList.Add(new System.Tuple<int, int>(x,y));
+        }
+
+        public void addCoordinate(int x, int y)
+        {
+            coordinateList.Add(new Tuple<int, int>(x, y));
+        }
+        public int getLength()
+        {
+            return coordinateList.Count;
+        }
+        public int getX(int position)
+        {
+            return coordinateList.ElementAt(position).Item1;
+        }
+
+        public int getY(int position)
+        {
+            return coordinateList.ElementAt(position).Item2;
+        }
     }
 
     public class Debugger
