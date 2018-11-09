@@ -299,17 +299,17 @@ namespace INFOIBV
         private Color[,] applyPipeline(Color[,] image)
         {
             //Start Phase1
-            Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
+            //Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
             //image = conversionGaussian(image, 2, 5);
             //progressPicture(image);
             //progressBar.Value = 1
-            image = conversionPercentageThreshold(image);
+            image = conversionThreshold(image, 100);
             progressPicture(image);
             progressBar.Value = 1;
-            Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
+            //Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
             //compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
             //compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
             //image = conversionEdgeDetection(image);
@@ -325,6 +325,8 @@ namespace INFOIBV
             //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
             //image = conversionShapeLabeling(labelShapes(image));
             var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
+            var whateva = calcAreaFromChaincode(whatevs.ElementAt(0));
+            var whatevi = calcPerimeterFromChaincode(whatevs.ElementAt(0));
             progressPicture(image);
             progressBar.Value = 1;
             return image;
@@ -465,17 +467,97 @@ namespace INFOIBV
             var listOfThings = getShapeCoordinates(shape, startPointx, startPointy);
             
             List<int> runLengthCode = new List<int>();
-            for (var x = 1; x < listOfThings.Count - 1; x++)
+            for (var x = 0; x < listOfThings.Count - 1; x++)
             {
                 var newPt = new Tuple<int, int>(listOfThings.ElementAt(x + 1).Item1 - listOfThings.ElementAt(x).Item1,
                                                     listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
                 runLengthCode.Add(getIndexAtElem(newPt));
             }
 
+            var lastPt = new Tuple<int, int>(listOfThings.ElementAt(0).Item1 - listOfThings.ElementAt(listOfThings.Count-1).Item1,
+                                                    listOfThings.ElementAt(0).Item2 - listOfThings.ElementAt(listOfThings.Count - 1).Item2);
+            runLengthCode.Add(getIndexAtElem(lastPt));
+
             foreach(var elem in runLengthCode)
                 Console.Write(elem);
             Console.WriteLine("");
             return runLengthCode;
+        }
+
+        private List<int> convertToDifferentialEncoding(List<int> runLengthEncoding)
+        {
+            List<int> diffEncoding = new List<int>();
+            for(int x = 0; x < runLengthEncoding.Count; x++)
+            {
+                if (x == runLengthEncoding.Count)
+                    diffEncoding.Add(runLengthEncoding.ElementAt(0) - runLengthEncoding.ElementAt(x));
+                else
+                    diffEncoding.Add(runLengthEncoding.ElementAt(x + 1) - runLengthEncoding.ElementAt(x));
+            }
+            return diffEncoding;
+        }
+
+        private double calcPerimeterFromChaincode(List<int> encoding)
+        {
+            double perimeter = 0.0;
+            for(int x = 0; x < encoding.Count; x++)
+            {
+                if (encoding.ElementAt(x) % 2 == 1)
+                    perimeter += Math.Sqrt(2);
+                else
+                    perimeter += 1;
+            }
+            Console.WriteLine("Perimeter: " + perimeter);
+            return perimeter;
+        }
+
+        private double calcAreaFromChaincode(List<int> encoding)
+        {
+            int area = 0;
+            int ypos = 0;
+            for (int x = 0; x < encoding.Count; x++)
+            {
+                switch (encoding.ElementAt(x))
+                {
+                    case 0:
+                        area -= ypos;
+                        break;
+                    case 1:
+                        area -= --ypos;
+                        break;
+                    case 2:
+                        ypos--;
+                        break;
+                    case 3:
+                        area += --ypos;   
+                        break;
+                    case 4:
+                        area += ypos;
+                        break;
+                    case 5:
+                        area += ++ypos;
+                        break;
+                    case 6:
+                        ypos++;
+                        break;
+                    case 7:
+                        area -= ++ypos;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            Console.WriteLine("Area: " + area);
+            return area;
+        }
+        private int convertToChainValue(List<int> diffEnocding)
+        {
+            var numericCode = 0;
+            for(int x = 0; x < diffEnocding.Count; x++)
+            {
+                numericCode += diffEnocding.ElementAt(x) * (8 ^ x);
+            }
+            return numericCode;
         }
 
         private List<int> getLabelsFromIntMatrix(int[,] labeledShapes)
