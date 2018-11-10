@@ -23,7 +23,7 @@ namespace INFOIBV
         private readonly Tuple<int, int>[] counterClockwiseRotation =
         {
             new Tuple<int, int>(1, 0), new Tuple<int, int>(1, -1), new Tuple<int, int>(0, -1),
-            new Tuple<int, int>(-1, -1), new Tuple<int, int>(-1, 0), new Tuple<int, int>(-1, -1),
+            new Tuple<int, int>(-1, -1), new Tuple<int, int>(-1, 0), new Tuple<int, int>(-1, 1),
             new Tuple<int, int>(0, 1), new Tuple<int, int>(1, 1)
         };
 
@@ -469,6 +469,7 @@ namespace INFOIBV
             List<int> runLengthCode = new List<int>();
             for (var x = 0; x < listOfThings.Count - 1; x++)
             {
+                Console.WriteLine("Encoding Point : " + listOfThings.ElementAt(x).Item1 + " " + listOfThings.ElementAt(x).Item2);
                 var newPt = new Tuple<int, int>(listOfThings.ElementAt(x + 1).Item1 - listOfThings.ElementAt(x).Item1,
                                                     listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
                 runLengthCode.Add(getIndexAtElem(newPt));
@@ -511,6 +512,7 @@ namespace INFOIBV
             return perimeter;
         }
 
+        //approximate area, because chaincode used in slides is wrong
         private double calcAreaFromChaincode(List<int> encoding)
         {
             int area = 0;
@@ -521,29 +523,38 @@ namespace INFOIBV
                 {
                     case 0:
                         area -= ypos;
+                        Console.WriteLine("0: " + area);
                         break;
                     case 1:
                         area -= --ypos;
+                        Console.WriteLine("1: " + area);
                         break;
                     case 2:
                         ypos--;
+                        Console.WriteLine("2: " + area);
                         break;
                     case 3:
-                        area += --ypos;   
+                        area += --ypos;
+                        Console.WriteLine("3: " + area);
                         break;
                     case 4:
                         area += ypos;
+                        Console.WriteLine("4: " + area);
                         break;
                     case 5:
                         area += ++ypos;
+                        Console.WriteLine("5: " + area);
                         break;
                     case 6:
                         ypos++;
+                        Console.WriteLine("6: " + area);
                         break;
                     case 7:
                         area -= ++ypos;
+                        Console.WriteLine("7: " + area);
                         break;
                     default:
+                        Console.WriteLine("default");
                         break;
                 }
             }
