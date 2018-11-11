@@ -13,6 +13,8 @@ namespace INFOIBV
 {
     public partial class INFOIBV : Form
     {
+
+        private readonly int globalAccuracy = 600;
         private readonly Tuple<int, int>[] clockwiseRotation =
         {
             new Tuple<int, int>(-1, -1), new Tuple<int, int>(0, -1), new Tuple<int, int>(1, -1),
@@ -335,12 +337,12 @@ namespace INFOIBV
             return image;
         }
 
+
         private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
         {
             //Start Phase2
-            int accuracy = 600;
+            int accuracy = globalAccuracy;
 
-            Color[,] edgeDetectedImage = conversionEdgeDetection(image);
 
             int[,] labelShapeImages = labelShapes(image).Item1;
             List<Color[,]> subImages = extractSubImageFromLabeledShapes(labelShapeImages);
@@ -354,7 +356,7 @@ namespace INFOIBV
 
             if (areas.Count > 10)
             {
-                areas.Sort();
+                areas.Sort((x, y) => y.Item1.CompareTo(x.Item1));
                 int length = areas.Count;
                 for (int x = 10; x < length; x++)
                 {
@@ -377,24 +379,18 @@ namespace INFOIBV
                     filteredSubImages.Add(element);
                 }
             }
-            Color[,] outputImage = ogImage;
+            Color[,] outputImage = makeBinaryImage();
             foreach (var element in filteredSubImages)
             {
-                Color[,] subImageEdgeDetected = conversionEdgeDetection(element);
-                int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(subImageEdgeDetected, accuracy)), 100));
-                int[,] labeledShapesInHough = houghLabelShapes(newGraph);
-                int [,] houghPointsToDraw = centroidOfLabeledHoughGraph(labeledShapesInHough);
-                outputImage = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(houghPointsToDraw), 600, outputImage);
+                outputImage = applyPhaseThree(element, outputImage);
             }
-            //remove connected shapes with small areas
-            //get center of shapes
-            //Draw lines
-            //Connect intersections
+
             return outputImage;
         }
 
-        private Color[,] applyPhaseThree(Color[,] image)
+        private Color[,] applyPhaseThree(Color[,] maybeCard, Color[,] outputImage)
         {
+
             return image;
         }
 
@@ -406,17 +402,15 @@ namespace INFOIBV
             return applyPhaseThree(image);
         }
 
-        
-
         private Color[,] testFunction1(Color[,] image)
         {
             int[,] houghGraph = testFunction2GraphOutput(image);
-            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(houghGraph), 600, image);
+            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(houghGraph), globalAccuracy, image);
         }
 
         private int[,] testFunction2GraphOutput(Color[,] image)
         {
-            int accuracy = 600;
+            int accuracy = globalAccuracy;
 
             int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110));
             return newGraph;
@@ -424,7 +418,7 @@ namespace INFOIBV
 
         private Color[,] testFunction2(Color[,] image, int threshold)
         {
-            int accuracy = 600;
+            int accuracy = globalAccuracy;
 
             int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), threshold));
             return imageFromHoughGraph(newGraph);
@@ -1185,6 +1179,47 @@ namespace INFOIBV
             return image;
         }
 
+        private List<Tuple<int, int>> getIntersections(List<Tuple<int, int>> coordinates)
+        {
+            foreach (var coordinateToCheck in coordinates)
+            {
+                foreach (var crossCoordinateCheck in coordinates)
+                {
+                    if (coordinateToCheck != coordinateToCheck)
+                    {
+                        //calculate intersection
+                        //add intersection to output list
+                        //go to next point
+                    }
+                }
+            }
+            //placeholder
+            return coordinates;
+        }
+
+        private Tuple<int, int> calculateIntersection(Tuple<int, int> firstCoordinate, Tuple<int,int> secondCoordinate)
+        {
+            int xCtr = InputImage.Size.Width / 2;
+            int yCtr = InputImage.Size.Height / 2;
+            int cRad = globalAccuracy / 2;
+            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
+            double dRad = (2.0 * rMax) / globalAccuracy;
+            double theta1 = firstCoordinate.Item1 * (Math.PI/globalAccuracy);
+            double theta2 = secondCoordinate.Item1 * (Math.PI/globalAccuracy);
+            double r1 = (firstCoordinate.Item2 - cRad) * dRad;
+            double r2 = (secondCoordinate.Item2 - cRad) * dRad;
+            double scalar = 1 / Math.Sin(theta2 - theta1);
+            double intersectionx = scalar * (r1 * Math.Sin(theta2) - r2 * Math.Sin(theta1));
+            double intersectiony = scalar * (r2 * Math.Cos(theta1) - r1 * Math.Cos(theta2));
+
+            if (theta1 == theta2)
+            {
+                return new Tuple<int, int>(-1,-1);
+            }
+            return new Tuple<int, int>(-1, -1);
+
+        }
+
         private Color[,] drawLinesFromHoughOnImage(List<Tuple<int, int>> coordinates, int accuracy, Color[,] image)
         {
             Console.WriteLine("Amount of coordinates is " + coordinates.Count);
@@ -1417,7 +1452,7 @@ namespace INFOIBV
             kernelList.addCoordinate(1, 0);
             kernelList.addCoordinate(1, 1);
 
-            int amountOfIterations = 3;
+            int amountOfIterations = 7;
             for (int index = 0; index < amountOfIterations; index++)
             {
                 houghGraph = conversionDilationInt(houghGraph, kernelList);
