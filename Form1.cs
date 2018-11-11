@@ -515,9 +515,9 @@ namespace INFOIBV
             Color[,] outputImage = makeBinaryImage();
             int colorStep = 25;
 
+            Random rnd = new Random();
             foreach (var image in imageList)
             {
-                Random rnd = new Random();
                 int ranNum1 = rnd.Next(1, 255);
                 int ranNum2 = rnd.Next(1, 255);
                 int ranNum3 = rnd.Next(1, 255);
