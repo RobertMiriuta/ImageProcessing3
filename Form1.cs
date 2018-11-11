@@ -314,7 +314,6 @@ namespace INFOIBV
 
         private Color[,] applyPhaseOne(Color[,] image)
         {
-            //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -328,36 +327,70 @@ namespace INFOIBV
             Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
+            progressPicture(image);
+            progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
-            //End Phase1
-            //Start Phase2
-            //int accuracy = 600;
-            //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
-            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-            //image = conversionShapeLabeling(labelShapes(image));
-            //var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
-            //var whateva = calcAreaFromChaincode(whatevs.ElementAt(0));
-            //var whatevi = calcPerimeterFromChaincode(whatevs.ElementAt(0));
-            //progressPicture(image);
-            //progressBar.Value = 1;
-            //End Phase2
             return image;
         }
 
         private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
         {
+            //Start Phase2
             int accuracy = 600;
 
             Color[,] edgeDetectedImage = conversionEdgeDetection(image);
 
-            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(edgeDetectedImage, accuracy)), 100));
+            int[,] labelShapeImages = labelShapes(image).Item1;
+            List<Color[,]> subImages = extractSubImageFromLabeledShapes(labelShapeImages);
+            List<List<int>> listOfChaincodes = calcRunLengthEncodingMany(labelShapeImages);
+            List<Tuple<double, Color[,]>> areas = new List<Tuple<double, Color[,]>>();
+            for (int i = 0; i < listOfChaincodes.Count ; i ++)
+            {
+                double area = calcAreaFromChaincode(listOfChaincodes.ElementAt(i));
+                areas.Add(new Tuple<double, Color[,]>(area, subImages.ElementAt(i)));
+            }
+
+            if (areas.Count > 10)
+            {
+                areas.Sort();
+                int length = areas.Count;
+                for (int x = 10; x < length; x++)
+                {
+                    areas.RemoveAt(10);
+                }
+            }
+
+            List<Color[,]> filteredImagesOnSize = new List<Color[,]>();
+            foreach (var element in areas)
+            {
+                filteredImagesOnSize.Add(element.Item2);
+            }
+
+            List<Color[,]> filteredSubImages = new List<Color[,]>();
+
+            foreach (var element in filteredImagesOnSize)
+            {
+                if (subImageHasHoleInShape(element))
+                {
+                    filteredSubImages.Add(element);
+                }
+            }
+            Color[,] outputImage = ogImage;
+            foreach (var element in filteredSubImages)
+            {
+                Color[,] subImageEdgeDetected = conversionEdgeDetection(element);
+                int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(subImageEdgeDetected, accuracy)), 100));
+                int[,] labeledShapesInHough = houghLabelShapes(newGraph);
+                int [,] houghPointsToDraw = centroidOfLabeledHoughGraph(labeledShapesInHough);
+                outputImage = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(houghPointsToDraw), 600, outputImage);
+            }
             //remove connected shapes with small areas
             //get center of shapes
             //Draw lines
             //Connect intersections
-            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(newGraph), 600, ogImage);
+            return outputImage;
         }
 
         private Color[,] applyPhaseThree(Color[,] image)
@@ -372,6 +405,8 @@ namespace INFOIBV
             image = applyPhaseTwo(image, ogImage);
             return applyPhaseThree(image);
         }
+
+        
 
         private Color[,] testFunction1(Color[,] image)
         {
@@ -485,6 +520,159 @@ namespace INFOIBV
                 }
             }
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
+        }
+
+        private int[,] houghLabelShapes(int[,] houghGraph)
+        {
+            int backgroundNumber = 0;
+            int unlabeledNumber = 1;
+            int currentLabelNumber = 2;
+            int[,] shapes = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)];
+            //Initialize shapes array with 0 for background and 1 for foreground
+            for (int x = 0; x < houghGraph.GetLength(0); x++)
+            {
+                for (int y = 0; y < houghGraph.GetLength(1); y++)
+                {
+                    if (houghGraph[x, y] > 0)
+                        shapes[x, y] = unlabeledNumber;
+                    else
+                        shapes[x, y] = backgroundNumber;
+                }
+            }
+
+            UF connectionTree = new UF(1000); //probably less than 100 shapes
+
+            //top left to bottom right
+            for (int y = 0; y < shapes.GetLength(1); y++)
+            {
+                for (int x = 0; x < shapes.GetLength(0); x++)
+                {
+                    if (shapes[x, y] != backgroundNumber)
+                    {
+                        try
+                        {
+                            if ((x + y) % 100 == 0)
+                            {
+                                Console.WriteLine(shapes[x, y] + "processing this with currentlabel being " + currentLabelNumber);
+                            }
+                            int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
+                            if (topNeighborhood.Max() == 0) //first pixel of shape
+                            {
+                                shapes[x, y] = currentLabelNumber++;
+                            }
+                            else //grow shape
+                            {
+                                shapes[x, y] = topNeighborhood.Max();
+                                List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
+                                if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
+                                {
+                                    foreach (var elem in unionLabels)
+                                        connectionTree.merge(elem, topNeighborhood.Max());
+                                }
+                            }
+
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            Debugger.debug(2, "Shape Labeliing: An Index was out of Range");
+                        }
+                    }
+                }
+            }
+            //resolve collisions
+            for (int y = 0; y < shapes.GetLength(1); y++)
+            {
+                for (int x = 0; x < shapes.GetLength(0); x++)
+                {
+                    shapes[x, y] = connectionTree.find(shapes[x, y]);
+                }
+            }
+            return shapes;
+        }
+
+        private int[,] centroidOfLabeledHoughGraph(int[,] labeledhoughGraph)
+        {
+            List<int[,]> subHoughs = new List<int[,]>();
+            int[,] outputHoughGraph = new int[labeledhoughGraph.GetLength(0), labeledhoughGraph.GetLength(1)];
+            List<int> labels = getLabelsFromIntMatrix(labeledhoughGraph);
+
+            foreach (var label in labels)
+            {
+                int[,] currImage = new int[labeledhoughGraph.GetLength(0), labeledhoughGraph.GetLength(1)];
+                for (int x = 0; x < labeledhoughGraph.GetLength(0); x++)
+                {
+                    for (int y = 0; y < labeledhoughGraph.GetLength(1); y++)
+                    {
+                        if (labeledhoughGraph[x, y] == label)
+                            currImage[x, y] = 255;
+                    }
+                }
+                subHoughs.Add(currImage);
+            }
+
+            foreach (var subHough in subHoughs)
+            {
+                Tuple<int, int> center = calcCentroidFromHoughMass(subHough);
+                outputHoughGraph[center.Item1, center.Item2] = 255;
+            }
+            return outputHoughGraph;
+        }
+
+        private Tuple<int, int> calcCentroidFromHoughMass(int[,] houghGraph)
+        {
+            int xCenter = 0;
+            int yCenter = 0;
+            int count = 0;
+            for (int x = 0; x < houghGraph.GetLength(0); x++)
+            {
+                for (int y = 0; y < houghGraph.GetLength(1); y++)
+                {
+                    if (houghGraph[x, y] == 255)
+                    {
+                        xCenter += x;
+                        yCenter += y;
+                        count++;
+                    }
+                }
+            }
+            if (count != 0)
+            {
+                xCenter = xCenter / count;
+                yCenter = yCenter / count;
+                return new Tuple<int, int>(xCenter, yCenter);
+            }
+            else
+            {
+                return new Tuple<int, int>(0, 0);
+            }
+        }
+
+        private Tuple<int,int> calcCentroidFromShape(Color[,] binaryShape)
+        {
+            int xCenter = 0;
+            int yCenter = 0;
+            int count = 0;
+            for (int x = 0; x < binaryShape.GetLength(0); x++)
+            {
+                for (int y = 0; y < binaryShape.GetLength(1); y++)
+                {
+                    if (binaryShape[x, y] == Color.FromArgb(255, 255, 255))
+                    {
+                        xCenter += x;
+                        yCenter += y;
+                        count++;
+                    }   
+                }
+            }
+            if(count != 0)
+            {
+                xCenter = xCenter / count;
+                yCenter = yCenter / count;
+                return new Tuple<int, int>(xCenter, yCenter);
+            } else
+            {
+                return new Tuple<int, int>(0, 0);
+            }
         }
 
         private bool subImageHasHoleInShape(Color[,] image)
