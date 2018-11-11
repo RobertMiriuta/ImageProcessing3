@@ -5,16 +5,12 @@ using System.Linq;
 using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using System.Xml.Serialization;
-using System.Xml.Xsl;
 
 namespace INFOIBV
 
 {
     public partial class INFOIBV : Form
     {
-
-        private readonly int globalAccuracy = 600;
         private readonly Tuple<int, int>[] clockwiseRotation =
         {
             new Tuple<int, int>(-1, -1), new Tuple<int, int>(0, -1), new Tuple<int, int>(1, -1),
@@ -28,6 +24,8 @@ namespace INFOIBV
             new Tuple<int, int>(-1, -1), new Tuple<int, int>(-1, 0), new Tuple<int, int>(-1, 1),
             new Tuple<int, int>(0, 1), new Tuple<int, int>(1, 1)
         };
+
+        private readonly int globalAccuracy = 600;
 
         private Bitmap InputImage;
         private Bitmap OutputImage;
@@ -71,17 +69,17 @@ namespace INFOIBV
                     bSeries.Points.Add(new DataPoint(i, bArray[i]));
                     if (max < rArray[i])
                         max = rArray[i];
-                        if (max < gArray[i])
-                            max = gArray[i];
-                        if (max < bArray[i])
-                            max = bArray[i];
-                    }
+                    if (max < gArray[i])
+                        max = gArray[i];
+                    if (max < bArray[i])
+                        max = bArray[i];
+                }
 
-                    histoIn.ChartAreas[0].AxisX.Minimum = 0;
-                    histoIn.ChartAreas[0].AxisX.Maximum = 255;
+                histoIn.ChartAreas[0].AxisX.Minimum = 0;
+                histoIn.ChartAreas[0].AxisX.Maximum = 255;
 
-                    histoIn.ChartAreas[0].AxisY.Minimum = 0;
-                    histoIn.ChartAreas[0].AxisY.Maximum = max;
+                histoIn.ChartAreas[0].AxisY.Minimum = 0;
+                histoIn.ChartAreas[0].AxisY.Maximum = max;
             }
         }
 
@@ -105,149 +103,13 @@ namespace INFOIBV
             progressBar.Value = 1;
             progressBar.Step = 1;
 
-            List<TextBox> boxes = new List<TextBox>();
-            boxes.Add(matrix1);
-            boxes.Add(matrix2);
-            boxes.Add(matrix3);
-            boxes.Add(matrix4);
-            boxes.Add(matrix5);
-            boxes.Add(matrix6);
-            boxes.Add(matrix7);
-            boxes.Add(matrix8);
-            boxes.Add(matrix9);
-            boxes.Add(matrix10);
-            boxes.Add(matrix11);
-            boxes.Add(matrix12);
-            boxes.Add(matrix13);
-            boxes.Add(matrix14);
-            boxes.Add(matrix15);
-            boxes.Add(matrix16);
-            boxes.Add(matrix17);
-            boxes.Add(matrix18);
-            boxes.Add(matrix19);
-            boxes.Add(matrix20);
-            boxes.Add(matrix21);
-            boxes.Add(matrix22);
-            boxes.Add(matrix23);
-            boxes.Add(matrix24);
-            boxes.Add(matrix25);
-
             //Reads the combobox to decide which conversion should be done on the input image.
-            var checkeredcheckbox = checkBox1.Checked;
-            Color[,] secondImage;
             switch (comboBox1.Text)
             {
-                case "grayscale":
-                    Image = conversionGrayscale(Image);
-                    break;
-                case "negative":
-                    Image = conversionNegative(Image);
-                    break;
-                case "shape labeling":
-                    Image = conversionShapeLabeling(labelShapes(Image));
-                    break;
-                case "contrastadjustment":
-                    double percentage = Convert.ToDouble(textBox1.Text);
-                    if (percentage >= 0.50)
-                    {
-                        MessageBox.Show("Percentage selected is too high");
-                        return;
-                    }
-                    else
-                    {
-                        Image = conversionContrastAdjustment(Image, Convert.ToDouble(textBox1.Text));
-                    }
-                    break;
-                case "gaussian":
-                    if (textBox2.Text.Equals("") || textBox3.Equals("")) return;
-                    Image = conversionGaussian(Image, Convert.ToDouble(textBox2.Text), Convert.ToInt16(textBox3.Text));
-                    break;
-                case "threshold":
-                    Image = conversionThreshold(Image, Convert.ToInt16(textBox1.Text));
-                    break;
-                case "threshold percentage":
-                    Image = conversionPercentageThreshold(Image);
-                    break;
-                case "threshold bernsen":
-                    Image = conversionThresholdBernsen(Image, Convert.ToInt16(textBox1.Text));
-                    break;
-                case "linear":
-                    Image = conversionLinear(Image, boxes);
-                    break;
-                case "median":
-                    Image = conversionMedian(Image, Convert.ToInt16(textBox1.Text));
-                    break;
-                case "edge detection":
-                    Image = conversionEdgeDetection(Image);
-                    break;
-                case "erosion":
-                    Image = conversionErosion(Image, checkeredcheckbox, true);
-                    break;
-                case "dilation":
-                    Image = conversionDilation(Image, checkeredcheckbox, true);
-                    break;
-                case "geodesic erosion":
-                    secondImage = getSecondImage();
-                    if (secondImage == null) return;
-                    Image = conversionGeodesicErosion(Image, checkeredcheckbox, secondImage, true);
-                    break;
-                case "geodesic dilation":
-                    secondImage = getSecondImage();
-                    if (secondImage == null) return;
-                    Image = conversionGeodesicDilation(Image, checkeredcheckbox, secondImage, true);
-                    break;
-                case "opening":
-                    Image = conversionErosion(Image, checkeredcheckbox, true);
-                    Image = conversionDilation(Image, checkeredcheckbox, true);
-                    break;
-                case "closing":
-                    Image = conversionDilation(Image, checkeredcheckbox, true);
-                    Image = conversionErosion(Image, checkeredcheckbox, true);
-                    break;
-                case "complement":
-                    Image = conversionComplement(Image);
-                    break;
-                case "min":
-                    secondImage = getSecondImage();
-                    if (secondImage == null) return;
-                    Image = conversionMin(Image, secondImage);
-                    break;
-                case "max":
-                    secondImage = getSecondImage();
-                    if (secondImage == null) return;
-                    Image = conversionMax(Image, secondImage);
-                    break;
-                case "value counting":
-                    ValuesBox.Text = countDistinctValues().ToString();
-                    break;
-                case "boundary trace":
-                    Image = conversionBoundary(Image);
-                    break;
-                case "fourier descriptor":
-                    Image = conversionFourier(Image);
-                    break;
                 case "pipeline":
                     //Here the magic happens
                     Image = applyPipeline(Image);
                     //Jk it's still trash
-                    break;
-                case "phase one":
-                    Image = applyPhaseOne(Image);
-                    break;
-                case "phase two":
-                    Image = applyPhaseTwo(Image, Image);
-                    break;
-                case "phase three":
-                    Image = applyPhaseThree(Image);
-                    break;
-                case "applyFunction1":
-                    Image = testFunction1(Image);
-                    break;
-                case "applyFunction2":
-                    Image = testFunction2(Image, Convert.ToInt16(textBox1.Text));
-                    break;
-                case "applyFunction3":
-                    Image = testFunction3(Image);
                     break;
                 default:
                     Debugger.debug(1, "Nothing matched");
@@ -262,8 +124,7 @@ namespace INFOIBV
                 OutputImage.SetPixel(x, y, Image[x, y]); // Set the pixel color at coordinate (x,y)
 
             pictureBox2.Image = OutputImage; // Display output image
-            
-            //TODO Add a histogram function, to reduce mess.
+
             histoOut.Series.Clear();
             var result = calculateHistogramFromImage(OutputImage); //Calculates histogram for the output image.
             var rArray = result.Item1;
@@ -291,6 +152,7 @@ namespace INFOIBV
                 if (max < bArray[i])
                     max = bArray[i];
             }
+
             histoOut.ChartAreas[0].AxisX.Minimum = 0;
             histoOut.ChartAreas[0].AxisX.Maximum = 255;
 
@@ -302,6 +164,7 @@ namespace INFOIBV
 
         //_______Main Functionality_________
 
+        //Shows the progress picture
         private void progressPicture(Color[,] image)
         {
             Bitmap stum = new Bitmap(InputImage.Size.Width, InputImage.Size.Height);
@@ -309,11 +172,12 @@ namespace INFOIBV
             for (var y = 0; y < image.GetLength(1); y++)
                 stum.SetPixel(x, y, image[x, y]); // Set the pixel color at coordinate (x,y)
             Debugger.debug(1, "Showing the intermediate output image");
-        
+
             pictureBox2.Image = stum;
             pictureBox2.Update();
         }
 
+        //Applies phase one
         private Color[,] applyPhaseOne(Color[,] image)
         {
             //Conversion to Grayscale
@@ -327,8 +191,9 @@ namespace INFOIBV
 
             //Remove background noise
             Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
-            compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
-            compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
+            compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false)); //opening the image
+            compareImage =
+                conversionDilationBinary(compareImage, convertInputToTuplesBinary(false)); //opening the image
             progressPicture(image);
             progressBar.Value = 1;
 
@@ -340,58 +205,52 @@ namespace INFOIBV
             return image;
         }
 
+        //Applies phase two
         private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
         {
             //Start Phase2
             int[,] labelShapeImages = labelShapes(image).Item1;
             List<Color[,]> subImages = extractSubImageFromLabeledShapes(labelShapeImages);
-            List<List<int>> listOfChaincodes = calcRunLengthEncodingMany(labelShapeImages);
+            List<List<int>> listOfChaincodes = calcChaincodeMany(labelShapeImages);
 
             //add area to image, to filter on later
             List<Tuple<double, Color[,]>> areas = new List<Tuple<double, Color[,]>>();
-            for (int i = 0; i < listOfChaincodes.Count ; i ++)
+            for (int i = 0; i < listOfChaincodes.Count; i++)
             {
                 double area = calcAreaFromChaincode(listOfChaincodes.ElementAt(i));
                 areas.Add(new Tuple<double, Color[,]>(area, subImages.ElementAt(i)));
             }
 
             //If the area is above 10, which means there are more than 10 shapes, remove the smallest ones
-            Console.WriteLine("Subimages here before filtering on amount of shapes " + areas.Count);
+            Debugger.debug(1, "Subimages here before filtering on amount of shapes " + areas.Count);
             if (areas.Count > 10)
             {
                 areas.Sort((x, y) => y.Item1.CompareTo(x.Item1));
                 int length = areas.Count;
-                for (int x = 10; x < length; x++)
-                {
-                    areas.RemoveAt(10);
-                }
+                for (int x = 10; x < length; x++) areas.RemoveAt(10);
             }
+
             List<Color[,]> filteredImagesOnSize = new List<Color[,]>();
-            foreach (var element in areas)
-            {
-                filteredImagesOnSize.Add(element.Item2);
-            }
-            Console.WriteLine("Subimages left after filtering on amount of shapes " + filteredImagesOnSize.Count);
+            foreach (var element in areas) filteredImagesOnSize.Add(element.Item2);
+            Debugger.debug(1, "Subimages left after filtering on amount of shapes " + filteredImagesOnSize.Count);
             //Filter images on holes inside the image, if that is above the threshold, add image to the output.
             List<Color[,]> filteredSubImages = new List<Color[,]>();
             foreach (var element in filteredImagesOnSize)
-            {
                 if (subImageHasAmountOfHolesInShape((Color[,]) element.Clone(), 4))
-                {
                     filteredSubImages.Add(element);
-                }
-            }
-            Console.WriteLine("Subimages left after filtering on amount of holes " + filteredSubImages.Count);
+            Debugger.debug(1, "Subimages left after filtering on amount of holes " + filteredSubImages.Count);
 
-            Color[,] outputImage = createNiceImage(filteredSubImages);
+            Color[,] outputImage = combineSubImages(filteredSubImages);
             return outputImage;
         }
 
+        //Applies phase three
         private Color[,] applyPhaseThree(Color[,] image)
         {
             return image;
         }
 
+        //Applies, in order, phase one -> two -> three
         private Color[,] applyPipeline(Color[,] image)
         {
             Color[,] ogImage = (Color[,]) image.Clone();
@@ -399,117 +258,60 @@ namespace INFOIBV
             return applyPhaseTwo(image, ogImage);
         }
 
-        private Color[,] testFunction1(Color[,] image)
-        {
-            int[,] houghGraph = testFunction2GraphOutput(image);
-            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(houghGraph), globalAccuracy, image);
-        }
-
-        private int[,] testFunction2GraphOutput(Color[,] image)
-        {
-            int accuracy = globalAccuracy;
-
-            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110));
-            return newGraph;
-        }
-
-        private Color[,] testFunction2(Color[,] image, int threshold)
-        {
-            int accuracy = globalAccuracy;
-
-            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), threshold));
-            return imageFromHoughGraph(newGraph);
-        }
-
-        private Color[,] testFunction3(Color[,] image)
-        {
-            return imageFromHoughGraph(conversionHough(image, 600));
-        }
-
-        private Color[,] conversionShapeLabeling(Tuple<int[,],int> shapesAndAmount)
-        {
-            Random rnd = new Random();
-            int ranNum1 = rnd.Next(1, 255);
-            int ranNum2 = rnd.Next(1, 255);
-            int ranNum3 = rnd.Next(1, 255);
-            int colorStep = (int) (255.0 / shapesAndAmount.Item2);
-            Color[,] outputImage = new Color[shapesAndAmount.Item1.GetLength(0), shapesAndAmount.Item1.GetLength(1)];
-            for (int x = 0; x < shapesAndAmount.Item1.GetLength(0); x++)
-            {
-                for (int y = 0; y < shapesAndAmount.Item1.GetLength(1); y++)
-                {
-                    outputImage[x, y] = Color.FromArgb(((shapesAndAmount.Item1[x, y] * ranNum1) * colorStep) % 255,
-                        ((shapesAndAmount.Item1[x, y] * ranNum2) * colorStep) % 255, ((shapesAndAmount.Item1[x, y] * ranNum3) * colorStep) % 255);
-                }
-            }
-            return outputImage;
-        }
-        //Operates on binary images
-        private Tuple<int[,],int> labelShapes(Color[,] image)
+        //Operates on binary images, travers the shape looking for white pixels, then applies shape labelling
+        //Shapes that are connected are stored in a tree data structure.
+        //This functions runs really long during our pipeline
+        private Tuple<int[,], int> labelShapes(Color[,] image)
         {
             int backgroundNumber = 0;
             int unlabeledNumber = 1;
             int currentLabelNumber = 2;
             int[,] shapes = new int[image.GetLength(0), image.GetLength(1)];
             //Initialize shapes array with 0 for background and 1 for foreground
-            for(int x = 0; x < image.GetLength(0); x++)
-            {
-                for(int y = 0; y < image.GetLength(1); y++)
-                {
-                    if (image[x, y] == Color.FromArgb(255, 255, 255))
-                        shapes[x, y] = unlabeledNumber;
-                }
-            }
+            for (int x = 0; x < image.GetLength(0); x++)
+            for (int y = 0; y < image.GetLength(1); y++)
+                if (image[x, y] == Color.FromArgb(255, 255, 255))
+                    shapes[x, y] = unlabeledNumber;
 
             UF connectionTree = new UF(500); //probably less than 100 shapes
 
             //top left to bottom right
             for (int y = 0; y < shapes.GetLength(1); y++)
-            {
-                for (int x = 0; x < shapes.GetLength(0); x++)
-                {
-                    if(shapes[x, y] != backgroundNumber)
+            for (int x = 0; x < shapes.GetLength(0); x++)
+                if (shapes[x, y] != backgroundNumber)
+                    try
                     {
-                        try
-                        {
-                            int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
+                        int[] topNeighborhood =
+                            {shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1]};
 
-                            int max = topNeighborhood.Max();
-                            if (max == 0) //first pixel of shape
-                            {
-                                shapes[x, y] = currentLabelNumber++;
-                            }
-                            else //grow shape
-                            {
-                                shapes[x, y] = max;
-                                List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
-                                if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
-                                {
-                                    foreach (var elem in unionLabels)
-                                        connectionTree.merge(elem, topNeighborhood.Max());
-                                }
-                            }
-                            
-                        }
-                        catch (IndexOutOfRangeException)
+                        int max = topNeighborhood.Max();
+                        if (max == 0) //first pixel of shape
                         {
-                            Debugger.debug(2, "Shape Labeling: An Index was out of Range");
+                            shapes[x, y] = currentLabelNumber++;
+                        }
+                        else //grow shape
+                        {
+                            shapes[x, y] = max;
+                            List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
+                            if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
+                                foreach (var elem in unionLabels)
+                                    connectionTree.merge(elem, topNeighborhood.Max());
                         }
                     }
-                }
-            }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debugger.debug(2, "Shape Labeling: An Index was out of Range");
+                    }
+
             //resolve collisions
             for (int y = 0; y < shapes.GetLength(1); y++)
-            {
-                for (int x = 0; x < shapes.GetLength(0); x++)
-                {
-                    shapes[x, y] = connectionTree.find(shapes[x, y]);
-                }
-            }
-            return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
+            for (int x = 0; x < shapes.GetLength(0); x++)
+                shapes[x, y] = connectionTree.find(shapes[x, y]);
+            return new Tuple<int[,], int>(shapes, currentLabelNumber - 1);
         }
 
-        private Color[,] createNiceImage(List<Color[,]> imageList)
+        //Adds multiple sub images together
+        private Color[,] combineSubImages(List<Color[,]> imageList)
         {
             Color[,] outputImage = makeBinaryImage();
             int colorStep = 25;
@@ -522,17 +324,15 @@ namespace INFOIBV
                 int ranNum3 = rnd.Next(1, 255);
                 for (int x = 0; x < image.GetLength(0); x++)
                 for (int y = 0; y < image.GetLength(1); y++)
-                {
-                    if (image[x, y].R != 0) outputImage[x, y] = Color.FromArgb((ranNum1 * colorStep) % 255,
-                        (ranNum2 * colorStep) % 255, (ranNum3 * colorStep) % 255);
-
-                }
-
+                    if (image[x, y].R != 0)
+                        outputImage[x, y] = Color.FromArgb(ranNum1 * colorStep % 255,
+                            ranNum2 * colorStep % 255, ranNum3 * colorStep % 255);
             }
 
             return outputImage;
         }
 
+        //Not used, gives labels to hough shapes, so connected areas will be detected
         private int[,] houghLabelShapes(int[,] houghGraph)
         {
             int backgroundNumber = 0;
@@ -541,62 +341,48 @@ namespace INFOIBV
             int[,] shapes = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)];
             //Initialize shapes array with 0 for background and 1 for foreground
             for (int x = 0; x < houghGraph.GetLength(0); x++)
-            {
-                for (int y = 0; y < houghGraph.GetLength(1); y++)
-                {
-                    if (houghGraph[x, y] > 0)
-                        shapes[x, y] = unlabeledNumber;
-                    else
-                        shapes[x, y] = backgroundNumber;
-                }
-            }
+            for (int y = 0; y < houghGraph.GetLength(1); y++)
+                if (houghGraph[x, y] > 0)
+                    shapes[x, y] = unlabeledNumber;
+                else
+                    shapes[x, y] = backgroundNumber;
 
             UF connectionTree = new UF(1000); //probably less than 100 shapes
 
             //top left to bottom right
             for (int y = 0; y < shapes.GetLength(1); y++)
-            {
-                for (int x = 0; x < shapes.GetLength(0); x++)
-                {
-                    if (shapes[x, y] != backgroundNumber)
+            for (int x = 0; x < shapes.GetLength(0); x++)
+                if (shapes[x, y] != backgroundNumber)
+                    try
                     {
-                        try
+                        int[] topNeighborhood =
+                            {shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1]};
+                        if (topNeighborhood.Max() == 0) //first pixel of shape
                         {
-                            int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
-                            if (topNeighborhood.Max() == 0) //first pixel of shape
-                            {
-                                shapes[x, y] = currentLabelNumber++;
-                            }
-                            else //grow shape
-                            {
-                                shapes[x, y] = topNeighborhood.Max();
-                                List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
-                                if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
-                                {
-                                    foreach (var elem in unionLabels)
-                                        connectionTree.merge(elem, topNeighborhood.Max());
-                                }
-                            }
-
+                            shapes[x, y] = currentLabelNumber++;
                         }
-                        catch (IndexOutOfRangeException)
+                        else //grow shape
                         {
-                            Debugger.debug(2, "Shape Labeliing: An Index was out of Range");
+                            shapes[x, y] = topNeighborhood.Max();
+                            List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
+                            if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
+                                foreach (var elem in unionLabels)
+                                    connectionTree.merge(elem, topNeighborhood.Max());
                         }
                     }
-                }
-            }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debugger.debug(2, "Shape Labeliing: An Index was out of Range");
+                    }
+
             //resolve collisions
             for (int y = 0; y < shapes.GetLength(1); y++)
-            {
-                for (int x = 0; x < shapes.GetLength(0); x++)
-                {
-                    shapes[x, y] = connectionTree.find(shapes[x, y]);
-                }
-            }
+            for (int x = 0; x < shapes.GetLength(0); x++)
+                shapes[x, y] = connectionTree.find(shapes[x, y]);
             return shapes;
         }
 
+        //Calculates the centroid of every connected shape
         private int[,] centroidOfLabeledHoughGraph(int[,] labeledhoughGraph)
         {
             List<int[,]> subHoughs = new List<int[,]>();
@@ -607,13 +393,9 @@ namespace INFOIBV
             {
                 int[,] currImage = new int[labeledhoughGraph.GetLength(0), labeledhoughGraph.GetLength(1)];
                 for (int x = 0; x < labeledhoughGraph.GetLength(0); x++)
-                {
-                    for (int y = 0; y < labeledhoughGraph.GetLength(1); y++)
-                    {
-                        if (labeledhoughGraph[x, y] == label)
-                            currImage[x, y] = 255;
-                    }
-                }
+                for (int y = 0; y < labeledhoughGraph.GetLength(1); y++)
+                    if (labeledhoughGraph[x, y] == label)
+                        currImage[x, y] = 255;
                 subHoughs.Add(currImage);
             }
 
@@ -622,66 +404,61 @@ namespace INFOIBV
                 Tuple<int, int> center = calcCentroidFromHoughMass(subHough);
                 outputHoughGraph[center.Item1, center.Item2] = 255;
             }
+
             return outputHoughGraph;
         }
 
+        //Calculates the centroid a single connected shape
         private Tuple<int, int> calcCentroidFromHoughMass(int[,] houghGraph)
         {
             int xCenter = 0;
             int yCenter = 0;
             int count = 0;
             for (int x = 0; x < houghGraph.GetLength(0); x++)
-            {
-                for (int y = 0; y < houghGraph.GetLength(1); y++)
+            for (int y = 0; y < houghGraph.GetLength(1); y++)
+                if (houghGraph[x, y] == 255)
                 {
-                    if (houghGraph[x, y] == 255)
-                    {
-                        xCenter += x;
-                        yCenter += y;
-                        count++;
-                    }
+                    xCenter += x;
+                    yCenter += y;
+                    count++;
                 }
-            }
+
             if (count != 0)
             {
                 xCenter = xCenter / count;
                 yCenter = yCenter / count;
                 return new Tuple<int, int>(xCenter, yCenter);
             }
-            else
-            {
-                return new Tuple<int, int>(0, 0);
-            }
+
+            return new Tuple<int, int>(0, 0);
         }
 
-        private Tuple<int,int> calcCentroidFromShape(Color[,] binaryShape)
+        //Calculates the centroid a single connected shape
+        private Tuple<int, int> calcCentroidFromShape(Color[,] binaryShape)
         {
             int xCenter = 0;
             int yCenter = 0;
             int count = 0;
             for (int x = 0; x < binaryShape.GetLength(0); x++)
-            {
-                for (int y = 0; y < binaryShape.GetLength(1); y++)
+            for (int y = 0; y < binaryShape.GetLength(1); y++)
+                if (binaryShape[x, y] == Color.FromArgb(255, 255, 255))
                 {
-                    if (binaryShape[x, y] == Color.FromArgb(255, 255, 255))
-                    {
-                        xCenter += x;
-                        yCenter += y;
-                        count++;
-                    }   
+                    xCenter += x;
+                    yCenter += y;
+                    count++;
                 }
-            }
-            if(count != 0)
+
+            if (count != 0)
             {
                 xCenter = xCenter / count;
                 yCenter = yCenter / count;
                 return new Tuple<int, int>(xCenter, yCenter);
-            } else
-            {
-                return new Tuple<int, int>(0, 0);
             }
+
+            return new Tuple<int, int>(0, 0);
         }
 
+        //Looks at a subimage and if it contains a hole.
         private bool subImageHasHoleInShape(Color[,] image)
         {
             for (int x = 0; x < image.GetLength(0); x++)
@@ -693,10 +470,7 @@ namespace INFOIBV
                     if (image[x, y].R == 255)
                     {
                         insideShape = true;
-                        if (visitedShape)
-                        {
-                            return true;
-                        }
+                        if (visitedShape) return true;
                     }
 
                     if (image[x, y].R == 0 && insideShape)
@@ -710,32 +484,28 @@ namespace INFOIBV
             return false;
         }
 
+        //Looks at subimage and if it contains more than an x amount of holes (and less than 25)
         private bool subImageHasAmountOfHolesInShape(Color[,] image, int amountWanted)
         {
             image = conversionComplement(image);
             Tuple<int[,], int> thing = labelShapes(image);
             int amountOfInnerHoles = extractSubImageFromLabeledShapes(thing.Item1).Count;
-            Console.WriteLine("Amount of holes found = " + amountOfInnerHoles);
-            if (amountOfInnerHoles >= amountWanted && amountOfInnerHoles < 25)
-            {
-                return true;
-            }
+            Debugger.debug(2, "Amount of holes found = " + amountOfInnerHoles);
+            if (amountOfInnerHoles >= amountWanted && amountOfInnerHoles < 25) return true;
             return false;
         }
 
+        //Gets all the labels in the neighbourhood
         private List<int> getLabelFromNeighbourhood(int[] neighbourhood)
         {
             List<int> output = new List<int>();
             foreach (var element in neighbourhood)
-            {
                 if (element != 0 && element != 1)
-                {
                     output.Add(element);
-                }
-            }
             return output;
         }
 
+        //Returns individual images based on the labels that were given
         private List<Color[,]> extractSubImageFromLabeledShapes(int[,] labeledShapes)
         {
             List<Color[,]> subimages = new List<Color[,]>();
@@ -745,87 +515,82 @@ namespace INFOIBV
             {
                 Color[,] currImage = makeBinaryImage(labeledShapes.GetLength(0), labeledShapes.GetLength(1));
                 for (int x = 0; x < labeledShapes.GetLength(0); x++)
-                {
-                    for (int y = 0; y < labeledShapes.GetLength(1); y++)
-                    {
-                        if (labeledShapes[x, y] == label)
-                            currImage[x, y] = Color.White;
-                    }
-                }
+                for (int y = 0; y < labeledShapes.GetLength(1); y++)
+                    if (labeledShapes[x, y] == label)
+                        currImage[x, y] = Color.White;
                 subimages.Add(currImage);
             }
 
             return subimages;
         }
 
-        private List<List<int>> calcRunLengthEncodingMany(int[,] labeledShapes)
+        //Calculates the chaincode of multiple labeled shapes
+        private List<List<int>> calcChaincodeMany(int[,] labeledShapes)
         {
             List<Color[,]> subimages = extractSubImageFromLabeledShapes(labeledShapes);
             List<List<int>> outputEncodings = new List<List<int>>();
 
-            foreach(var image in subimages)
+            foreach (var image in subimages)
                 outputEncodings.Add(calcRunLengthEnncodingSingleImage(image));
-            
+
             return outputEncodings;
         }
 
+        //Calculates the chaincode of a single image
         private List<int> calcRunLengthEnncodingSingleImage(Color[,] shape)
         {
             var startPoint = getStartPoint(shape);
             var startPointx = startPoint.Item1;
             var startPointy = startPoint.Item2;
             var listOfThings = getShapeCoordinates(shape, startPointx, startPointy);
-            
+
             List<int> runLengthCode = new List<int>();
             for (var x = 0; x < listOfThings.Count - 1; x++)
             {
-               
                 var newPt = new Tuple<int, int>(listOfThings.ElementAt(x + 1).Item1 - listOfThings.ElementAt(x).Item1,
-                                                    listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
+                    listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
                 runLengthCode.Add(getIndexAtElem(newPt));
             }
 
-            var lastPt = new Tuple<int, int>(listOfThings.ElementAt(0).Item1 - listOfThings.ElementAt(listOfThings.Count-1).Item1,
-                                                    listOfThings.ElementAt(0).Item2 - listOfThings.ElementAt(listOfThings.Count - 1).Item2);
+            var lastPt = new Tuple<int, int>(
+                listOfThings.ElementAt(0).Item1 - listOfThings.ElementAt(listOfThings.Count - 1).Item1,
+                listOfThings.ElementAt(0).Item2 - listOfThings.ElementAt(listOfThings.Count - 1).Item2);
             runLengthCode.Add(getIndexAtElem(lastPt));
 
             return runLengthCode;
         }
 
+        //Converts chaincode to differential chaincode so that rotation does not matter
         private List<int> convertToDifferentialEncoding(List<int> runLengthEncoding)
         {
             List<int> diffEncoding = new List<int>();
-            for(int x = 0; x < runLengthEncoding.Count; x++)
-            {
+            for (int x = 0; x < runLengthEncoding.Count; x++)
                 if (x == runLengthEncoding.Count)
                     diffEncoding.Add(runLengthEncoding.ElementAt(0) - runLengthEncoding.ElementAt(x));
                 else
                     diffEncoding.Add(runLengthEncoding.ElementAt(x + 1) - runLengthEncoding.ElementAt(x));
-            }
             return diffEncoding;
         }
 
+        //Calculates the perimeter based on the chaincode
         private double calcPerimeterFromChaincode(List<int> encoding)
         {
             double perimeter = 0.0;
-            for(int x = 0; x < encoding.Count; x++)
-            {
+            for (int x = 0; x < encoding.Count; x++)
                 if (encoding.ElementAt(x) % 2 == 1)
                     perimeter += Math.Sqrt(2);
                 else
                     perimeter += 1;
-            }
-            Console.WriteLine("Perimeter: " + perimeter);
+            Debugger.debug(2, "Perimeter: " + perimeter);
             return perimeter;
         }
 
-        //approximate area, because chaincode used in slides is wrong
+        //approximate area, because chaincode used in slides is wrong, we think :) .
         private double calcAreaFromChaincode(List<int> encoding)
         {
             int area = 0;
             int ypos = 0;
             for (int x = 0; x < encoding.Count; x++)
-            {
                 switch (encoding.ElementAt(x))
                 {
                     case 0:
@@ -853,391 +618,244 @@ namespace INFOIBV
                         area -= ++ypos;
                         break;
                     default:
-                        Console.WriteLine("default");
+                        Debugger.debug(2, "default");
                         break;
                 }
-            }
-            Console.WriteLine("Area: " + area);
+            Debugger.debug(2, "Area: " + area);
             return area;
         }
-        private int convertToChainValue(List<int> diffEnocding)
-        {
-            var numericCode = 0;
-            for(int x = 0; x < diffEnocding.Count; x++)
-            {
-                numericCode += diffEnocding.ElementAt(x) * (8 ^ x);
-            }
-            return numericCode;
-        }
 
+        //Gets unique labels from an int matrix
         private List<int> getLabelsFromIntMatrix(int[,] labeledShapes)
         {
             List<int> labels = new List<int>();
 
             for (int x = 0; x < labeledShapes.GetLength(0); x++)
+            for (int y = 0; y < labeledShapes.GetLength(1); y++)
             {
-                for (int y = 0; y < labeledShapes.GetLength(1); y++)
-                {
-                    int num = labeledShapes[x, y];
-                    if (!labels.Contains(num) && num != 0 && num != 1)
-                        labels.Add(num);
-                }
+                int num = labeledShapes[x, y];
+                if (!labels.Contains(num) && num != 0 && num != 1)
+                    labels.Add(num);
             }
+
             return labels;
         }
+
+        //Here automatic thresholding bernsen is implemented
         private Color[,] conversionThresholdBernsen(Color[,] image, int contrastThreshold)
         {
             int size = 3;
             int halfSize = (size - 1) / 2;
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    int[] pixelVector = new int[(size * size) - 1];
-                    int pixelVectorIndex = 0;
-                    for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                int[] pixelVector = new int[size * size - 1];
+                int pixelVectorIndex = 0;
+                for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
+                    try
                     {
-                        for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
+                        if (xFilter == 0 && yFilter == 0)
                         {
-                            try
-                            {
-                                if (xFilter == 0 && yFilter == 0)
-                                {
-                                    Debugger.debug(2, "Stepping over the center value");
-                                }
-                                else
-                                {
-                                    Color filterColor = image[x - xFilter, y - yFilter];
-                                    Debugger.debug(2, "YOUR NEW COLOR " + filterColor.R);
-                                    pixelVector[pixelVectorIndex] = filterColor.R;
-                                    pixelVectorIndex++;
-                                    Debugger.debug(2, "YOUR NEW VECTOR INDEX " + pixelVectorIndex);
-                                }
-                            }
-                            catch(IndexOutOfRangeException IOORE)
-                            {
-                                Debugger.debug(2, "Threshold bernsen was out of bounds, but that is okay " + pixelVectorIndex);
-                                Debugger.debug(3, IOORE.Message);
-                                pixelVector[pixelVectorIndex] = 0;
-                                pixelVectorIndex++;
-                            }
-                            
+                            Debugger.debug(2, "Stepping over the center value");
+                        }
+                        else
+                        {
+                            Color filterColor = image[x - xFilter, y - yFilter];
+                            Debugger.debug(2, "YOUR NEW COLOR " + filterColor.R);
+                            pixelVector[pixelVectorIndex] = filterColor.R;
+                            pixelVectorIndex++;
+                            Debugger.debug(2, "YOUR NEW VECTOR INDEX " + pixelVectorIndex);
                         }
                     }
-
-                    int newColor;
-                    int max = pixelVector.Max();
-                    int min = pixelVector.Min();
-                    if (max - min < contrastThreshold)
+                    catch (IndexOutOfRangeException IOORE)
                     {
-                        newColor = 0;
-                    }
-                    else
-                    {
-                        int threshold = (min + max) / 2;
-                        if (x + y % 100 == 0) Debugger.debug(2, "The selected threshold is: " + threshold);
-                        int pixelColor = image[x, y].R;
-                        newColor = pixelColor > threshold ? 255 : 0;      //Uses the red color to calculate the threshold, since all channels are the same.
+                        Debugger.debug(2, "Threshold bernsen was out of bounds, but that is okay " + pixelVectorIndex);
+                        Debugger.debug(3, IOORE.Message);
+                        pixelVector[pixelVectorIndex] = 0;
+                        pixelVectorIndex++;
                     }
 
-                    Color updatedColor = Color.FromArgb(newColor, newColor, newColor); // Pixel is either 255 or 0, depending on the threshold.
-                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
+                int newColor;
+                int max = pixelVector.Max();
+                int min = pixelVector.Min();
+                if (max - min < contrastThreshold)
+                {
+                    newColor = 0;
+                }
+                else
+                {
+                    int threshold = (min + max) / 2;
+                    if (x + y % 100 == 0) Debugger.debug(2, "The selected threshold is: " + threshold);
+                    int pixelColor = image[x, y].R;
+                    newColor = pixelColor > threshold
+                        ? 255
+                        : 0; //Uses the red color to calculate the threshold, since all channels are the same.
                 }
 
+                Color updatedColor =
+                    Color.FromArgb(newColor, newColor,
+                        newColor); // Pixel is either 255 or 0, depending on the threshold.
+                image[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
+                progressBar.PerformStep(); // Increment progress bar
             }
+
             return image;
         }
 
         private int getIndexAtElem(Tuple<int, int> coordinate)
         {
             if (counterClockwiseRotation.Contains(coordinate))
-            {
                 for (int i = 0; i < counterClockwiseRotation.Length; i++)
-                {
-                    if (counterClockwiseRotation.ElementAt(i).Equals(coordinate)) return i;
-                }
-            }
+                    if (counterClockwiseRotation.ElementAt(i).Equals(coordinate))
+                        return i;
             return -1;
         }
 
         private Color[,] conversionPercentageThreshold(Color[,] image)
         {
-            Tuple<int[], int[], int[]> histogram = calculateHistogramFromImage(InputImage); //picking the green channel since image is greyscale
-            double percentile = (Convert.ToDouble(image.GetLength(0) + image.GetLength(1)) * 0.1);
+            Tuple<int[], int[], int[]>
+                histogram = calculateHistogramFromImage(
+                    InputImage); //picking the green channel since image is greyscale
+            double percentile = Convert.ToDouble(image.GetLength(0) + image.GetLength(1)) * 0.1;
             int[] onechannel = histogram.Item2;
             for (int i = 255; i > 0; i--)
-            {
                 if (onechannel[i] > percentile)
                     return conversionThreshold(image, Convert.ToInt16(Convert.ToDouble(i) * 0.7));
-            }
             Debugger.debug(2, "Applying default threshold, no color with 20 values found");
             return conversionThreshold(image, 180); //default threshold
         }
 
+        //Calculates the circularity based on a shape
         private double calcCircularity(double area, double perimeter)
         {
             return Math.PI * 4 * area / (perimeter * perimeter);
         }
-        
+
+        //Applies sobel edge detection, we changed it based on your earlier feedback. Hope it is good now haha.
         private Color[,] conversionEdgeDetection(Color[,] image)
         {
-            int[,] sobelFilterX = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
-            int[,] sobelFilterY = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+            int[,] sobelFilterX = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
+            int[,] sobelFilterY = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
             int size = sobelFilterY.GetLength(0);
             int halfSize = (size - 1) / 2;
             double[,] imageSobelX = new double[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    double newColor = 0.0;
-                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
-                        x >= InputImage.Size.Width - halfSize)
+                double newColor = 0.0;
+                if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
+                    x >= InputImage.Size.Width - halfSize)
+                    newColor = 128.0;
+                else
+                    for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                    for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
                     {
-                        newColor = 128.0;
+                        Color filterColor = image[x - xFilter, y - yFilter];
+                        newColor += sobelFilterX[xFilter + halfSize, yFilter + halfSize] * filterColor.R;
                     }
-                    else
-                    {
-                        for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
-                        {
-                            for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
-                            {
-                                Color filterColor = image[x - xFilter, y - yFilter];
-                                newColor += sobelFilterX[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.R;
 
-                            }
-                        }
-                    }
-                    imageSobelX[x, y] = newColor; // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep(); // Increment progress bar
-                }
+                imageSobelX[x, y] = newColor; // Set the new pixel color at coordinate (x,y)
+                progressBar.PerformStep(); // Increment progress bar
             }
 
             progressBar.Value = 1;
             double[,] imageSobelY = new double[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    double newColor = 0.0;
-                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
-                        x >= InputImage.Size.Width - halfSize)
+                double newColor = 0.0;
+                if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
+                    x >= InputImage.Size.Width - halfSize)
+                    newColor = 128.0;
+                else
+                    for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
+                    for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
                     {
-                        newColor = 128.0;
+                        Color filterColor = image[x - xFilter, y - yFilter];
+                        newColor += sobelFilterY[xFilter + halfSize, yFilter + halfSize] * filterColor.R;
                     }
-                    else
-                    {
-                        for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
-                        {
-                            for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
-                            {
-                                Color filterColor = image[x - xFilter, y - yFilter];
-                                newColor += sobelFilterY[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.R;
 
-                            }
-                        }
-                    }
-                    imageSobelY[x, y] = newColor;                             // Set the new pixel color at coordinate (x,y)
-                }
-
+                imageSobelY[x, y] = newColor; // Set the new pixel color at coordinate (x,y)
             }
 
-          
+
             progressBar.Value = 1;
             Color[,] newImage = new Color[InputImage.Size.Width, InputImage.Size.Height];
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
+                double newColor;
+                if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
+                    x >= InputImage.Size.Width - halfSize)
                 {
-                    double newColor;
-                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
-                        x >= InputImage.Size.Width - halfSize)
-                    {
-                        newColor = 128.0;
-                    }
-                    else
-                    {
-
-                        newColor = Math.Sqrt(Math.Pow(imageSobelX[x, y], 2) + Math.Pow(imageSobelY[x, y], 2));
-                        if (newColor > 255)
-                        {
-                            newColor = 255.0;
-                        }
-                        else if (newColor < 0)
-                        {
-                            newColor = 0.0;
-                        }
-
-                    }
-
-                    int convertedNewColor = Convert.ToInt16(newColor);
-                    Color updatedColor = Color.FromArgb(convertedNewColor, convertedNewColor, convertedNewColor);
-                    newImage[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
+                    newColor = 128.0;
+                }
+                else
+                {
+                    newColor = Math.Sqrt(Math.Pow(imageSobelX[x, y], 2) + Math.Pow(imageSobelY[x, y], 2));
+                    if (newColor > 255)
+                        newColor = 255.0;
+                    else if (newColor < 0) newColor = 0.0;
                 }
 
+                int convertedNewColor = Convert.ToInt16(newColor);
+                Color updatedColor = Color.FromArgb(convertedNewColor, convertedNewColor, convertedNewColor);
+                newImage[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
             }
+
             return newImage;
         }
 
         private Color[,] conversionThreshold(Color[,] image, int threshold)
         {
-            image = conversionGrayscale(image); // Convert image to grayscale, even though it already is a grayscale image.
+            image = conversionGrayscale(
+                image); // Convert image to grayscale, even though it already is a grayscale image.
             progressBar.Value = 1;
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    Color pixelColor = image[x, y];                         // Get the pixel color at coordinate (x,y)
-                    int newColor = pixelColor.R > threshold ? 255 : 0;      //Uses the red color to calculate the threshold, since all channels are the same.
-                    Color updatedColor = Color.FromArgb(newColor, newColor, newColor); // Pixel is either 255 or 0, depending on the threshold.
-                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
-                }
-
+                Color pixelColor = image[x, y]; // Get the pixel color at coordinate (x,y)
+                int newColor =
+                    pixelColor.R > threshold
+                        ? 255
+                        : 0; //Uses the red color to calculate the threshold, since all channels are the same.
+                Color updatedColor =
+                    Color.FromArgb(newColor, newColor,
+                        newColor); // Pixel is either 255 or 0, depending on the threshold.
+                image[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
+                progressBar.PerformStep(); // Increment progress bar
             }
+
             return image;
         }
 
         private Color[,] conversionGrayscale(Color[,] image)
         {
             for (int x = 0; x < InputImage.Size.Width; x++)
+            for (int y = 0; y < InputImage.Size.Height; y++)
             {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    Color pixelColor = image[x, y];                         // Get the pixel color at coordinate (x,y)
-                    int convertedRedColor = (int)(pixelColor.R * 0.299);
-                    int convertedGreenColor = (int)(pixelColor.G * 0.587);
-                    int convertedBlueColor = (int)(pixelColor.B * 0.114);
-                    int Y = convertedRedColor + convertedGreenColor + convertedBlueColor;
-                    if (Y < 0)
-                    {
-                        Y = 0;
-                    }
+                Color pixelColor = image[x, y]; // Get the pixel color at coordinate (x,y)
+                int convertedRedColor = (int) (pixelColor.R * 0.299);
+                int convertedGreenColor = (int) (pixelColor.G * 0.587);
+                int convertedBlueColor = (int) (pixelColor.B * 0.114);
+                int Y = convertedRedColor + convertedGreenColor + convertedBlueColor;
+                if (Y < 0) Y = 0;
 
-                    if (Y > 255)
-                    {
-                        Y = 255;
-                    }
+                if (Y > 255) Y = 255;
 
-                    Color updatedColor = Color.FromArgb(Y, Y, Y);
-                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
-                }
-
+                Color updatedColor = Color.FromArgb(Y, Y, Y);
+                image[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
+                progressBar.PerformStep(); // Increment progress bar
             }
+
             return image;
         }
 
-        private Color[,] conversionContrastAdjustment(Color[,] image, double percentage)
-        {
-            int low_R;
-            int low_G;
-            int low_B;
-            int high_R;
-            int high_G;
-            int high_B;
-
-            int[] histogram_red = new int[256];
-            int[] histogram_green = new int[256];
-            int[] histogram_blue = new int[256];
-            int amount_of_pixels = InputImage.Size.Width * InputImage.Size.Height;
-            for (int x = 0; x < InputImage.Size.Width; x++)
-            {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    Color pixelColor = image[x, y];                         // Get the pixel color at coordinate (x,y)
-                    histogram_red[pixelColor.R]++;
-                    histogram_green[pixelColor.G]++;
-                    histogram_blue[pixelColor.B]++;
-                }
-
-            }
-
-            int percentile = (int)(percentage * amount_of_pixels);
-            String debugmessage = "the percentile is set at: " + percentile;
-            Debugger.debug(2, debugmessage);
-
-            low_R = getColorAtPercentileLowFromHistogram(histogram_red, percentile);
-            high_R = getColorAtPercentileHighFromHistogram(histogram_red, percentile);
-
-            low_G = getColorAtPercentileLowFromHistogram(histogram_blue, percentile);
-            high_G = getColorAtPercentileHighFromHistogram(histogram_blue, percentile);
-
-            low_B = getColorAtPercentileLowFromHistogram(histogram_blue, percentile);
-            high_B = getColorAtPercentileHighFromHistogram(histogram_blue, percentile);
-
-            double kR = 255 / (high_R - low_R);
-            double kG = 255 / (high_G - low_G);
-            double kB = 255 / (high_B - low_B);
-
-
-            for (int x = 0; x < InputImage.Size.Width; x++)
-            {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    Color pixelColor = image[x, y];
-                    int updatedRed = (int)(kR * (pixelColor.R - low_R));
-                    int updatedGreen = (int)(kG * (pixelColor.G - low_G));
-                    int updatedBlue = (int)(kG * (pixelColor.B - low_B));
-                    if (updatedRed > 255) updatedRed = 255;
-                    if (updatedGreen > 255) updatedGreen = 255;
-                    if (updatedBlue > 255) updatedBlue = 255;
-                    if (updatedRed < 0) updatedRed = 0;
-                    if (updatedGreen < 0) updatedGreen = 0;
-                    if (updatedBlue < 0) updatedBlue = 0;
-                    Color updatedColor = Color.FromArgb(updatedRed, updatedGreen, updatedBlue);
-                    image[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
-                }
-            }
-            return image;
-        }
-
-        private List<Tuple<int, int>> getIntersections(List<Tuple<int, int>> coordinates)
-        {
-            foreach (var coordinateToCheck in coordinates)
-            {
-                foreach (var crossCoordinateCheck in coordinates)
-                {
-                    if (coordinateToCheck != coordinateToCheck)
-                    {
-                        //calculate intersection
-                        //add intersection to output list
-                        //go to next point
-                    }
-                }
-            }
-            //placeholder
-            return coordinates;
-        }
-
-        private Tuple<int, int> calculateIntersection(Tuple<int, int> firstCoordinate, Tuple<int,int> secondCoordinate)
-        {
-            int xCtr = InputImage.Size.Width / 2;
-            int yCtr = InputImage.Size.Height / 2;
-            int cRad = globalAccuracy / 2;
-            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
-            double dRad = (2.0 * rMax) / globalAccuracy;
-            double theta1 = firstCoordinate.Item1 * (Math.PI/globalAccuracy);
-            double theta2 = secondCoordinate.Item1 * (Math.PI/globalAccuracy);
-            double r1 = (firstCoordinate.Item2 - cRad) * dRad;
-            double r2 = (secondCoordinate.Item2 - cRad) * dRad;
-            double scalar = 1 / Math.Sin(theta2 - theta1);
-            double intersectionx = scalar * (r1 * Math.Sin(theta2) - r2 * Math.Sin(theta1));
-            double intersectiony = scalar * (r2 * Math.Cos(theta1) - r1 * Math.Cos(theta2));
-
-            if (theta1 == theta2)
-            {
-                return new Tuple<int, int>(-1,-1);
-            }
-            return new Tuple<int, int>(-1, -1);
-
-        }
-
+        //Draws lines based on the hough graph
         private Color[,] drawLinesFromHoughOnImage(List<Tuple<int, int>> coordinates, int accuracy, Color[,] image)
         {
-            Console.WriteLine("Amount of coordinates is " + coordinates.Count);
+            Debugger.debug(2, "Amount of coordinates is " + coordinates.Count);
             foreach (var element in coordinates)
             {
                 int theta = element.Item1;
@@ -1245,57 +863,45 @@ namespace INFOIBV
                 int previousy = 0;
                 for (int x = 0; x < InputImage.Size.Width; x++)
                 {
-                    if (x == 0)
-                    {
-                        previousy = getYfromTheta(theta, r, accuracy, x);
-                    }
+                    if (x == 0) previousy = getYfromTheta(theta, r, accuracy, x);
                     try
                     {
-                        
                         int y = getYfromTheta(theta, r, accuracy, x);
                         int ydelta = y - previousy;
                         if (!(y > InputImage.Size.Height || y < 0))
                         {
                             if (ydelta < 0 && y != previousy)
-                            {
-                                    for (int pointer = previousy; y < pointer; pointer--)
+                                for (int pointer = previousy; y < pointer; pointer--)
+                                    try
                                     {
-                                        try
-                                        {
-                                            image[x, pointer] = Color.FromArgb(57, 255, 20);
-                                        }
-                                        catch (IndexOutOfRangeException)
-                                        {
-                                            Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, negative ydelta");
-                                        }
-
-                                }
-                            }
-                            else if (ydelta > 0 && y != previousy)
-                            {
-                                    for (int pointer = previousy; y > pointer; pointer++)
-                                    {
-                                        try
-                                        {
-                                            image[x, pointer] = Color.FromArgb(57, 255, 20);
-                                        }
-                                        catch (IndexOutOfRangeException)
-                                        {
-                                            Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
-                                        }
+                                        image[x, pointer] = Color.FromArgb(57, 255, 20);
                                     }
-                            }
+                                    catch (IndexOutOfRangeException)
+                                    {
+                                        Debugger.debug(2,
+                                            "Index out of range at drawLinesFromHoughOnImage, negative ydelta");
+                                    }
+                            else if (ydelta > 0 && y != previousy)
+                                for (int pointer = previousy; y > pointer; pointer++)
+                                    try
+                                    {
+                                        image[x, pointer] = Color.FromArgb(57, 255, 20);
+                                    }
+                                    catch (IndexOutOfRangeException)
+                                    {
+                                        Debugger.debug(2,
+                                            "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
+                                    }
                             else
-                            {
                                 try
                                 {
                                     image[x, y] = Color.FromArgb(57, 255, 20);
                                 }
                                 catch (IndexOutOfRangeException)
                                 {
-                                    Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
+                                    Debugger.debug(2,
+                                        "Index out of range at drawLinesFromHoughOnImage, positive ydelta");
                                 }
-                            }
                         }
 
                         previousy = y;
@@ -1305,43 +911,41 @@ namespace INFOIBV
                         Debugger.debug(2, "Index out of range at drawLinesFromHoughOnImage");
                     }
                 }
-
-                
-
             }
+
             return image;
         }
 
+        //Helper function for draw lines from hough on image
         private int getYfromTheta(int step, int r, int accuracy, int x)
         {
             int xCtr = InputImage.Size.Width / 2;
             int yCtr = InputImage.Size.Height / 2;
             int cRad = accuracy / 2;
-            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
-            double dRad = (2.0 * rMax) / accuracy;
-            double theta = step * (Math.PI/accuracy);
+            double rMax = Math.Sqrt(xCtr * xCtr + yCtr * yCtr);
+            double dRad = 2.0 * rMax / accuracy;
+            double theta = step * (Math.PI / accuracy);
             int newx = x - xCtr;
 
-            return (int) ((((r - cRad) * dRad) - (newx * Math.Cos(theta))) / Math.Sin(theta)) + yCtr;
+            return (int) (((r - cRad) * dRad - newx * Math.Cos(theta)) / Math.Sin(theta)) + yCtr;
         }
 
+        //from a houghgraph, gets back the 'original' values.
         private List<Tuple<int, int>> getCoordinatesWhitePixels(int[,] houghGraph)
         {
-            List<Tuple<int,int>> coordinates = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> coordinates = new List<Tuple<int, int>>();
             for (int x = 0; x < houghGraph.GetLength(0); x++)
-            {
-                for (int y = 0; y < houghGraph.GetLength(1); y++)
+            for (int y = 0; y < houghGraph.GetLength(1); y++)
+                if (houghGraph[x, y] == 255)
                 {
-                    if (houghGraph[x, y] == 255)
-                    {
-                        Tuple<int, int> coordinate = new Tuple<int, int>(x, y);
-                        coordinates.Add(coordinate);
-                    }
+                    Tuple<int, int> coordinate = new Tuple<int, int>(x, y);
+                    coordinates.Add(coordinate);
                 }
-            }
+
             return coordinates;
         }
 
+        //Non max supression used with a hough graph
         private int[,] nonMaxSupression(int[,] houghGraph)
         {
             int filterx = 3;
@@ -1350,55 +954,41 @@ namespace INFOIBV
             int halfsizey = (filtery - 1) / 2;
             List<int> values;
             for (int theta = 0; theta < houghGraph.GetLength(0); theta++)
+            for (int r = 0; r < houghGraph.GetLength(1); r++)
             {
-                for (int r = 0; r < houghGraph.GetLength(1); r++)
+                values = new List<int>();
+                for (int x = -halfsizex; x < halfsizex; x++)
+                for (int y = -halfsizey; y < halfsizex; y++)
                 {
-                    values = new List<int>();
-                    for (int x = -halfsizex; x < halfsizex; x++)
+                    int transformedx = x + theta;
+                    int transformedy = y + r;
+                    try
                     {
-                        for (int y = -halfsizey; y < halfsizex; y++)
-                        {
-                            int transformedx = x + theta;
-                            int transformedy = y + r;
-                            try
-                            {
-                                values.Add(houghGraph[transformedx, transformedy]);
-                            }
-                            catch (IndexOutOfRangeException)
-                            {
-                                Debugger.debug(2, "Index out of range exception thrown in the nonMaxSupression");
-                            }
-                        }
+                        values.Add(houghGraph[transformedx, transformedy]);
                     }
-
-                    int maximumvalue = getMaximumValue(values);
-
-                    if (houghGraph[theta, r] != maximumvalue)
+                    catch (IndexOutOfRangeException)
                     {
-                        houghGraph[theta,r] = 0;
+                        Debugger.debug(2, "Index out of range exception thrown in the nonMaxSupression");
                     }
                 }
+
+                int maximumvalue = getMaximumValue(values);
+
+                if (houghGraph[theta, r] != maximumvalue) houghGraph[theta, r] = 0;
             }
 
             return houghGraph;
         }
 
+        //Threshold applied to a houghgraph
         private int[,] thresholdHoughGraph(int[,] houghGraph, int threshold)
         {
             for (int theta = 0; theta < houghGraph.GetLength(0); theta++)
-            {
-                for (int r = 0; r < houghGraph.GetLength(1); r++)
-                {
-                    if (!(houghGraph[theta, r] > threshold))
-                    {
-                        houghGraph[theta, r] = 0;
-                    }
-                    else
-                    {
-                        houghGraph[theta, r] = 255;
-                    }
-                }
-            }
+            for (int r = 0; r < houghGraph.GetLength(1); r++)
+                if (!(houghGraph[theta, r] > threshold))
+                    houghGraph[theta, r] = 0;
+                else
+                    houghGraph[theta, r] = 255;
 
             return houghGraph;
         }
@@ -1408,9 +998,7 @@ namespace INFOIBV
             int[,] houghGraphDilated = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)];
             for (int step = 0; step < houghGraph.GetLength(0); step++)
             for (int r = 0; r < houghGraph.GetLength(1); r++)
-            {
                 if (houghGraph[step, r] == 255)
-                {
                     for (var index = 0; index < kernelList.getLength(); index++)
                     {
                         var structureStep = step + kernelList.getX(index);
@@ -1420,8 +1008,6 @@ namespace INFOIBV
                               structureStep >= houghGraph.GetLength(0) - 1))
                             houghGraphDilated[structureStep, structureR] = 255;
                     }
-                }
-            }
 
             return houghGraphDilated;
         }
@@ -1431,7 +1017,6 @@ namespace INFOIBV
             int[,] houghGraphEroded = new int[houghGraph.GetLength(0), houghGraph.GetLength(1)];
             for (int step = 0; step < houghGraph.GetLength(0); step++)
             for (int r = 0; r < houghGraph.GetLength(1); r++)
-            {
                 if (houghGraph[step, r] == 255)
                 {
                     var doesKernelFit = true;
@@ -1449,7 +1034,6 @@ namespace INFOIBV
 
                     if (doesKernelFit) houghGraphEroded[step, r] = 255;
                 }
-            }
 
             return houghGraphEroded;
         }
@@ -1469,13 +1053,9 @@ namespace INFOIBV
 
             int amountOfIterations = 7;
             for (int index = 0; index < amountOfIterations; index++)
-            {
                 houghGraph = conversionDilationInt(houghGraph, kernelList);
-            }
             for (int index = 0; index < amountOfIterations; index++)
-            {
                 houghGraph = conversionErosionInt(houghGraph, kernelList);
-            }
             return houghGraph;
         }
 
@@ -1486,30 +1066,24 @@ namespace INFOIBV
             int nAng = accuracy;
             double dAng = Math.PI / nAng;
             int nRad = accuracy;
-            int cRad  = nRad / 2;
-            double rMax = Math.Sqrt((xCtr * xCtr) + (yCtr * yCtr));
-            double dRad = (2.0 * rMax) / nRad;
+            int cRad = nRad / 2;
+            double rMax = Math.Sqrt(xCtr * xCtr + yCtr * yCtr);
+            double dRad = 2.0 * rMax / nRad;
             int[,] houghGraph = new int[nAng, nRad];
-            
-            for(int u = 0; u < InputImage.Size.Width; u++)
+
+            for (int u = 0; u < InputImage.Size.Width; u++)
             {
                 int x = u - xCtr;
-                for(int v = 0; v < InputImage.Size.Height; v++)
+                for (int v = 0; v < InputImage.Size.Height; v++)
                 {
                     int y = v - yCtr;
-                    if(image[u,v].R == 255)
-                    { 
+                    if (image[u, v].R == 255)
                         for (int step = 0; step < nAng; step++)
                         {
                             double theta = dAng * step;
-                            int r = cRad + (int) Math.Round((x * Math.Cos(theta) + (y * Math.Sin(theta)))/dRad);
-                            if (r >= 0 && r < nRad)
-                            {
-                                houghGraph[step, r]++;
-                            }
-
+                            int r = cRad + (int) Math.Round((x * Math.Cos(theta) + y * Math.Sin(theta)) / dRad);
+                            if (r >= 0 && r < nRad) houghGraph[step, r]++;
                         }
-                    }
                 }
             }
 
@@ -1522,236 +1096,30 @@ namespace INFOIBV
             double xFactor = (double) InputImage.Size.Width / graph.GetLength(0);
             double yFactor = (double) InputImage.Size.Height / graph.GetLength(1);
             for (int theta = 0; theta < graph.GetLength(0); theta++)
+            for (int r = 0; r < graph.GetLength(1); r++)
             {
-                for (int r = 0; r < graph.GetLength(1); r++)
+                int valueFromGraph = graph[theta, r];
+                if (valueFromGraph > 0)
                 {
-                    int valueFromGraph = graph[theta, r];
-                    if (valueFromGraph > 0)
-                    {
-                        int x = (int) (xFactor * theta);
-                        int y = (int) (yFactor * r);
-                        if (x > InputImage.Size.Width -1)
-                        {
-                            x = InputImage.Size.Width - 1;
-                        }
-                        if (y > InputImage.Size.Height - 1)
-                        {
-                            y = InputImage.Size.Height - 1;
-                        }
-                        if (valueFromGraph > 255)
-                        {
-                            valueFromGraph = 255;
-
-                        }
-                        Color newColor = Color.FromArgb(valueFromGraph, valueFromGraph, valueFromGraph);
-                        outputimage[x, y] = newColor;
-                    }
+                    int x = (int) (xFactor * theta);
+                    int y = (int) (yFactor * r);
+                    if (x > InputImage.Size.Width - 1) x = InputImage.Size.Width - 1;
+                    if (y > InputImage.Size.Height - 1) y = InputImage.Size.Height - 1;
+                    if (valueFromGraph > 255) valueFromGraph = 255;
+                    Color newColor = Color.FromArgb(valueFromGraph, valueFromGraph, valueFromGraph);
+                    outputimage[x, y] = newColor;
                 }
             }
+
             return outputimage;
         }
 
         private double convertToRadians(double degree)
         {
-            return (degree * (Math.PI / 180.0));
+            return degree * (Math.PI / 180.0);
         }
 
-        private Color[,] conversionGaussian(Color[,] image, double sigma, int size)
-        {
-            double[,] gaussianFilter = createGaussianFilter(sigma, size);
-            return applyFilterToImage(image, gaussianFilter);
-        }
 
-        private Color[,] conversionLinear(Color[,] image, List<TextBox> boxes)
-        {
-            double[,] linearFilter = createLinearFilter(boxes);
-            return applyFilterToImage(image, linearFilter);
-        }
-
-        private Color[,] conversionMedian(Color[,] image, int size)
-        {
-            int halfSize = (size - 1) / 2;
-            Color[,] newImage = new Color[InputImage.Size.Width, InputImage.Size.Height];
-            for (int x = 0; x < InputImage.Size.Width; x++)
-            {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    int newColor;
-                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
-                        x >= InputImage.Size.Width - halfSize)
-                    {
-                        newColor = 128;
-                    }
-
-                    else
-                    {
-                        int[] pixelVector = new int[size * size];
-                        int pixelVectorIndex = 0;
-                        for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
-                        {
-                            for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
-                            {
-                                Color filterColor = image[x - xFilter, y - yFilter];
-                                pixelVector[pixelVectorIndex] = filterColor.R;
-                                pixelVectorIndex++;
-                            }
-                        }
-                        Array.Sort(pixelVector);
-                        newColor = pixelVector[(pixelVector.Length + 1) / 2];
-                    }
-
-                    Color updatedColor = Color.FromArgb(newColor, newColor, newColor);
-                    newImage[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
-                }
-
-            }
-            return newImage;
-        }
-
-        private double[,] createGaussianFilter(double sigma, int size)
-        {
-            double[,] gaussianFilter = new double[size, size];
-            double r;
-            double s = 2.0 * sigma * sigma;
-
-            //This is used later for normalization
-            double sum = 0.0;
-            int halfSize = (size - 1) / 2;
-            for (int x = -halfSize; x <= halfSize; x++)
-            {
-                for (int y = -halfSize; y <= halfSize; y++)
-                {
-                    r = Math.Sqrt(x * x + y * y);
-                    int xIndice = x + halfSize;
-                    int yIndice = y + halfSize;
-                    double resultGaussian = (Math.Exp(-(r * r) / s)) / (Math.PI * s);
-                    gaussianFilter[xIndice, yIndice] = resultGaussian;
-                    sum += resultGaussian;
-                }
-            }
-
-            //Normalization
-            for (int i = 0; i < size; ++i)
-            {
-                for (int j = 0; j < size; ++j)
-                {
-                    gaussianFilter[i, j] /= sum;
-                }
-            }
-            return gaussianFilter;
-        }
-
-        private double[,] createLinearFilter(List<TextBox> boxes)
-        {
-            int i = 0, j = 0;
-            double sum = 0;
-            int kernel = 5;
-            double[,] linearFilter = new double[kernel, kernel];
-            foreach (TextBox box in boxes)
-            {
-                linearFilter[i, j] = Convert.ToDouble(box.Text);
-                sum += linearFilter[i, j];
-                if (i < kernel - 1)
-                {
-                    i++;
-                }
-                else
-                {
-                    i = 0;
-                    j++;
-                }
-            }
-
-            for (int x = 0; x < kernel; ++x)
-            {
-                for (int y = 0; y < kernel; ++y)
-                {
-                    linearFilter[x, y] /= sum;
-                }
-            }
-            return linearFilter;
-        }
-
-        private Color[,] applyFilterToImage(Color[,] image, double[,] filter)
-        {
-            int halfSize = (filter.GetLength(0) - 1) / 2;
-            int xBorder = (filter.GetLength(0) - 1) / 2;
-            int yBorder = (filter.GetLength(1) - 1) / 2;
-            Color[,] newImage = new Color[InputImage.Size.Width, InputImage.Size.Height];
-            for (int x = 0; x < InputImage.Size.Width; x++)
-            {
-                for (int y = 0; y < InputImage.Size.Height; y++)
-                {
-                    double updatedRed = 0.0;
-                    double updatedGreen = 0.0;
-                    double updatedBlue = 0.0;
-                    if (x < halfSize || y < halfSize || y >= InputImage.Size.Height - halfSize ||
-                        x >= InputImage.Size.Width - halfSize)
-                    {
-                        updatedBlue = 128;
-                        updatedGreen = 128;
-                        updatedRed = 128;
-
-                    }
-                    else
-                    {
-                        for (int xFilter = -halfSize; xFilter <= halfSize; xFilter++)
-                        {
-                            for (int yFilter = -halfSize; yFilter <= halfSize; yFilter++)
-                            {
-                                Color filterColor = image[x - xFilter, y - yFilter];
-                                updatedRed += filter[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.R;
-                                updatedGreen += filter[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.G;
-                                updatedBlue += filter[(xFilter + halfSize), (yFilter + halfSize)] * filterColor.B;
-                            }
-                        }
-
-                        if (updatedRed > 255) updatedRed = 255;
-                        if (updatedGreen > 255) updatedGreen = 255;
-                        if (updatedBlue > 255) updatedBlue = 255;
-                        if (updatedRed < 0) updatedRed = 0;
-                        if (updatedGreen < 0) updatedGreen = 0;
-                        if (updatedBlue < 0) updatedBlue = 0;
-
-                    }
-                    Color updatedColor = Color.FromArgb(Convert.ToInt32(updatedRed), Convert.ToInt32(updatedGreen), Convert.ToInt32(updatedBlue));
-                    newImage[x, y] = updatedColor;                             // Set the new pixel color at coordinate (x,y)
-                    progressBar.PerformStep();                              // Increment progress bar
-                }
-
-            }
-            return newImage;
-        }
-
-        private int getColorAtPercentileLowFromHistogram(int[] histogram_array, int percentile)
-        {
-            for (int i = 0; i < 255; i++)
-            {
-                percentile = percentile - histogram_array[i];
-                if (percentile < 0)
-                {
-                    return i;
-                }
-            }
-
-            return 255;
-        }
-
-        private int getColorAtPercentileHighFromHistogram(int[] histogram_array, int percentile)
-        {
-            for (int i = 255; 0 < i; i--)
-            {
-                percentile = percentile - histogram_array[i];
-                if (percentile < 0)
-                {
-                    return i;
-                }
-            }
-
-            return 0;
-        }
-        
         //Applies a geodesic erosion to an image, given a check image
         private Color[,] conversionGeodesicErosion(Color[,] image, bool isBinary, Color[,] checkImage, bool newKernel)
         {
@@ -1774,10 +1142,25 @@ namespace INFOIBV
                     var kernel = convertInputToTuplesBinary(newKernel);
                     return conversionErosionBinary(image, kernel);
                 }
-                else
+            }
+            catch (Exception E)
+            {
+                MessageBox.Show("Did you input a correct filter?");
+                Debugger.debug(2, E.Message);
+            }
+
+            return null;
+        }
+
+        //Acts as a switch between dilation applied to a binary or grayscale image
+        private Color[,] conversionDilation(Color[,] image, bool isBinary, bool newKernel)
+        {
+            try
+            {
+                if (isBinary)
                 {
-                    var kernel = convertInputToTuplesGrayscale();
-                    return conversionErosionGrayscale(image, kernel);
+                    var kernel = convertInputToTuplesBinary(newKernel);
+                    return conversionDilationBinary(image, kernel);
                 }
             }
             catch (Exception E)
@@ -1785,31 +1168,7 @@ namespace INFOIBV
                 MessageBox.Show("Did you input a correct filter?");
                 Debugger.debug(2, E.Message);
             }
-            return null;
-        }
 
-        //Acts as a switch between dilation applied to a binary or grayscale image
-        private Color[,] conversionDilation(Color[,] image, bool isBinary, bool newKernel)
-        {
-            
-                try
-                {
-                    if (isBinary)
-                    {
-                        var kernel = convertInputToTuplesBinary(newKernel);
-                        return conversionDilationBinary(image, kernel);
-                    }
-                    else
-                    {
-                        var kernel = convertInputToTuplesGrayscale();
-                        return conversionDilationGrayscale(image, kernel);
-                    }
-                }
-                catch (Exception E)
-                {
-                    MessageBox.Show("Did you input a correct filter?");
-                    Debugger.debug(2, E.Message);
-                }
             return null;
         }
 
@@ -1950,7 +1309,7 @@ namespace INFOIBV
 
             return newImage;
         }
-        
+
         //Calculates the fourrier descriptor, prints the coefficients and returns an empty image
         private Color[,] conversionFourier(Color[,] image)
         {
@@ -1963,22 +1322,15 @@ namespace INFOIBV
             int index = 0;
             foreach (var elem in shapeCoordinateArray)
             {
-                if (index % 25 == 0)
-                {
-                    decimatedList.Add(elem);
-                }
+                if (index % 25 == 0) decimatedList.Add(elem);
                 index++;
             }
+
             var fourierCoefficientArray = createFourierDescriptor(decimatedList.ToArray());
 
+            foreach (var value in fourierCoefficientArray) Debugger.debug(2, "Fourier value, real: " + value.Item1);
             foreach (var value in fourierCoefficientArray)
-            {
-                Debugger.debug(2, "Fourier value, real: " + value.Item1);
-            }
-            foreach (var value in fourierCoefficientArray)
-            {
                 Debugger.debug(2, "Fourier value, imaginary: " + value.Item2);
-            }
             var newImage = makeBinaryImage();
             return newImage;
         }
@@ -2001,14 +1353,16 @@ namespace INFOIBV
                 {
                     Color pixelColor1 = image1[x, y]; // Get the pixel color at coordinate (x,y) of the first image
                     Color pixelColor2 = image2[x, y]; //Get the pixel color at coordinate (x,y) of the second image
-                        var updatedColor = Color.FromArgb(Math.Min(pixelColor1.R, pixelColor2.R),
-                        Math.Min(pixelColor1.G, pixelColor2.G), Math.Min(pixelColor1.B, pixelColor2.B)); //Selecting the min values for every channel
-                        output[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
+                    var updatedColor = Color.FromArgb(Math.Min(pixelColor1.R, pixelColor2.R),
+                        Math.Min(pixelColor1.G, pixelColor2.G),
+                        Math.Min(pixelColor1.B, pixelColor2.B)); //Selecting the min values for every channel
+                    output[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
                     progressBar.PerformStep(); // Increment progress bar
                 }
 
                 return output;
             }
+
             //If the images don't match, return null
             return null;
         }
@@ -2026,13 +1380,15 @@ namespace INFOIBV
                     Color pixelColor1 = image1[x, y]; // Get the pixel color at coordinate (x,y) of the first image
                     Color pixelColor2 = image2[x, y]; //Get the pixel color at coordinate (x,y) of the second image
                     Color updatedColor = Color.FromArgb(Math.Max(pixelColor1.R, pixelColor2.R),
-                        Math.Max(pixelColor1.G, pixelColor2.G), Math.Max(pixelColor1.B, pixelColor2.B)); //Selecting the max values for every channel
+                        Math.Max(pixelColor1.G, pixelColor2.G),
+                        Math.Max(pixelColor1.B, pixelColor2.B)); //Selecting the max values for every channel
                     output[x, y] = updatedColor; // Set the new pixel color at coordinate (x,y)
                     progressBar.PerformStep(); // Increment progress bar
                 }
 
                 return output;
             }
+
             //If the images don't match, return null
             return null;
         }
@@ -2052,6 +1408,7 @@ namespace INFOIBV
 
             return image;
         }
+
         private Tuple<int, int>[] complexToTupleArray(Complex[] array)
         {
             var output = new Tuple<int, int>[array.Length];
@@ -2145,17 +1502,17 @@ namespace INFOIBV
         //Checks if two images are of the same size
         private bool isImageSameSize(Color[,] image1, Color[,] image2)
         {
-            Debugger.debug(2, image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " + image2.GetLength(1));
+            Debugger.debug(2,
+                image1.GetLength(0) + " " + image1.GetLength(1) + " " + image2.GetLength(0) + " " +
+                image2.GetLength(1));
             if (image1.GetLength(0) != image2.GetLength(0) || image1.GetLength(1) != image2.GetLength(1)
             ) //images should be of the same size
             {
                 MessageBox.Show("Image sizes didn't match, please try again");
                 return false;
             }
-            else
-            {
-                return true;
-            }
+
+            return true;
         }
 
         //Creates a black image, with the size of the InputImage
@@ -2173,8 +1530,8 @@ namespace INFOIBV
         {
             var newBinaryImage = new Color[sizex, sizey];
             for (var x = 0; x < sizex; x++)
-                for (var y = 0; y < sizey; y++)
-                    newBinaryImage[x, y] = Color.Black;
+            for (var y = 0; y < sizey; y++)
+                newBinaryImage[x, y] = Color.Black;
 
             return newBinaryImage;
         }
@@ -2233,8 +1590,8 @@ namespace INFOIBV
                 {
                     Debugger.debug(2, "Exception thrown in getNextPoint, this means the 'pointer' is out of bounds");
                 }
-                if (colour == 255) return direction;
 
+                if (colour == 255) return direction;
             }
 
             return 8; //Impossible value, if no other pixel has been found.
@@ -2256,8 +1613,8 @@ namespace INFOIBV
                 {
                     Debugger.debug(2, "Exception thrown in getNextPoint, this means the 'pointer' is out of bounds");
                 }
-                if (colour == 255) return direction;
 
+                if (colour == 255) return direction;
             }
 
             return 8; //Impossible value, if no other pixel has been found.
@@ -2274,12 +1631,12 @@ namespace INFOIBV
             return null;
         }
 
-        private Tuple<int,int> getStartPoint(int[,] image)
+        private Tuple<int, int> getStartPoint(int[,] image)
         {
             for (var x = 0; x < image.GetLength(0); x++)
-                for (var y = 0; y < image.GetLength(1); y++)
-                    if (image[x, y] == 255)
-                        return new Tuple<int, int>(x, y);
+            for (var y = 0; y < image.GetLength(1); y++)
+                if (image[x, y] == 255)
+                    return new Tuple<int, int>(x, y);
 
             return null;
         }
@@ -2352,49 +1709,13 @@ namespace INFOIBV
             return Tuple.Create(histogramRed, histogramGreen, histogramBlue);
         }
 
-        private Tuple<int, int>[] convertInputToTuplesBinary(Boolean newKernel)
+        private Tuple<int, int>[] convertInputToTuplesBinary(bool newKernel)
         {
-            if (newKernel)
-            { 
-                var allCoordinates = richTextBox1.Text;
-                var coordinatePairs = allCoordinates.Split(' ');
-                var coordinateTupleArray = new Tuple<int, int>[coordinatePairs.Length];
-                for (var x = 0; x < coordinatePairs.Length; x++)
-                {
-                    var coordinates = coordinatePairs[x].Split(',');
-                    int xCoordinate = Convert.ToInt16(coordinates[0]);
-                    int yCoordinate = Convert.ToInt16(coordinates[1]);
-                    coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate);
-                    String debugMessage = "Structuring element binary: X: " + xCoordinate + " Y: " + yCoordinate;
-                    Debugger.debug(2, debugMessage);
-                }
-
-                return coordinateTupleArray;
-            }
-            else
+            return new Tuple<int, int>[5]
             {
-                return new Tuple<int, int>[5] { new Tuple<int, int>(-1, 0), new Tuple<int, int>(0, -1), new Tuple<int, int>(0, 0), new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1) };
-            }
-
-        }
-
-        private Tuple<int, int, int>[] convertInputToTuplesGrayscale()
-        {
-            var allCoordinates = richTextBox1.Text;
-            var coordinatePairs = allCoordinates.Split(' ');
-            var coordinateTupleArray = new Tuple<int, int, int>[coordinatePairs.Length];
-            for (var x = 0; x < coordinatePairs.Length; x++)
-            {
-                var coordinates = coordinatePairs[x].Split(',');
-                int xCoordinate = Convert.ToInt16(coordinates[0]);
-                int yCoordinate = Convert.ToInt16(coordinates[1]);
-                int weight = Convert.ToInt16(coordinates[2]);
-                coordinateTupleArray[x] = Tuple.Create(xCoordinate, yCoordinate, weight);
-                String debugMessage = "Structuring element grayscale: X: " + xCoordinate + " Y: " + yCoordinate + " weight: " + weight;
-                Debugger.debug(2, debugMessage);
-            }
-
-            return coordinateTupleArray;
+                new Tuple<int, int>(-1, 0), new Tuple<int, int>(0, -1), new Tuple<int, int>(0, 0),
+                new Tuple<int, int>(1, 0), new Tuple<int, int>(0, 1)
+            };
         }
 
         //This function saves the image
@@ -2407,57 +1728,20 @@ namespace INFOIBV
 
         //This function shows optional input if the combobox options requires that.
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (comboBox1.Text.Equals("erosion") || comboBox1.Text.Equals("dilation") ||
-                comboBox1.Text.Equals("opening") || comboBox1.Text.Equals("closing") ||
-                comboBox1.Text.Equals("geodesic erosion") || comboBox1.Text.Equals("geodesic dilation"))
-                checkBox1.Visible = true;
-            else
-                checkBox1.Visible = false;
-
-            if (comboBox1.Text.Equals("gaussian"))
-            {
-                textBox1.Visible = false;
-                textBox2.Visible = true;
-                textBox3.Visible = true;
-                label2.Visible = true;
-                label3.Visible = true;
-            }
-            else
-            {
-                textBox1.Visible = true;
-                textBox2.Visible = false;
-                textBox3.Visible = false;
-                label2.Visible = false;
-                label3.Visible = false;
-            }
-        }
-
-        //Adjusts the label for the input based on the value of the 'binary' checkbox
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkBox1.Visible)
-            {
-                if (checkBox1.Checked)
-                    label1.Text = "Enter the structuring element. Example: 0,0 1,0 x,y ";
-                else
-                    label1.Text = "Enter the structuring element and the weight. Example: 0,0,2 1,0,0 x,y,w";
-            }
+        { 
         }
 
         private void outToInButton_Click(object sender, EventArgs e)
         {
             if (OutputImage == null)
                 return;
-            InputImage = (Bitmap)OutputImage.Clone();
+            InputImage = (Bitmap) OutputImage.Clone();
             pictureBox1.Image = InputImage;
         }
     }
 
     public class Coordinates
     {
-            public List<Tuple<int,int>> coordinateList { get; set; }
-
         public Coordinates()
         {
             coordinateList = new List<Tuple<int, int>>();
@@ -2466,17 +1750,21 @@ namespace INFOIBV
         public Coordinates(int x, int y)
         {
             coordinateList = new List<Tuple<int, int>>();
-            coordinateList.Add(new System.Tuple<int, int>(x,y));
+            coordinateList.Add(new Tuple<int, int>(x, y));
         }
+
+        public List<Tuple<int, int>> coordinateList { get; set; }
 
         public void addCoordinate(int x, int y)
         {
             coordinateList.Add(new Tuple<int, int>(x, y));
         }
+
         public int getLength()
         {
             return coordinateList.Count;
         }
+
         public int getX(int position)
         {
             return coordinateList.ElementAt(position).Item1;
@@ -2490,14 +1778,11 @@ namespace INFOIBV
 
     public class Debugger
     {
-        private static int debuglevel = 0;
+        private static readonly int debuglevel = 0;
 
-        public static void debug(int level, String message)
+        public static void debug(int level, string message)
         {
-            if (debuglevel >= level)
-            {
-                Console.WriteLine(message);
-            }
+            if (debuglevel >= level) Console.WriteLine(message);
         }
     }
 }
