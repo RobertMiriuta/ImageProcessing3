@@ -485,6 +485,34 @@ namespace INFOIBV
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
         }
 
+        private Tuple<int,int> calcCentroidFromShape(Color[,] binaryShape)
+        {
+            int xCenter = 0;
+            int yCenter = 0;
+            int count = 0;
+            for (int x = 0; x < binaryShape.GetLength(0); x++)
+            {
+                for (int y = 0; y < binaryShape.GetLength(1); y++)
+                {
+                    if (binaryShape[x, y] == Color.FromArgb(255, 255, 255))
+                    {
+                        xCenter += x;
+                        yCenter += y;
+                        count++;
+                    }   
+                }
+            }
+            if(count != 0)
+            {
+                xCenter = xCenter / count;
+                yCenter = yCenter / count;
+                return new Tuple<int, int>(xCenter, yCenter);
+            } else
+            {
+                return new Tuple<int, int>(0, 0);
+            }
+        }
+
         private bool subImageHasHoleInShape(Color[,] image)
         {
             for (int x = 0; x < image.GetLength(0); x++)
