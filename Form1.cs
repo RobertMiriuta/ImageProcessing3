@@ -329,7 +329,7 @@ namespace INFOIBV
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
             progressPicture(image);
             progressBar.Value = 1;
-            image = conversionGeodesicDilation(image, true, compareImage, false);
+            //image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
             return image;
@@ -337,17 +337,6 @@ namespace INFOIBV
 
         private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
         {
-            //Start Phase2
-            //int accuracy = 600;
-            //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
-            //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
-            //image = conversionShapeLabeling(labelShapes(image));
-            //var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
-            //var whateva = calcAreaFromChaincode(whatevs.ElementAt(0));
-            //var whatevi = calcPerimeterFromChaincode(whatevs.ElementAt(0));
-            //progressPicture(image);
-            //progressBar.Value = 1;
-            //End Phase2
             int accuracy = 600;
 
             int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110));
