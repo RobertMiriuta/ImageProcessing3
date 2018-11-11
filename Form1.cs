@@ -314,7 +314,6 @@ namespace INFOIBV
 
         private Color[,] applyPhaseOne(Color[,] image)
         {
-            //Start Phase1
             Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
             image = conversionGrayscale(image);
             progressPicture(image);
@@ -328,13 +327,16 @@ namespace INFOIBV
             Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
-            image = conversionEdgeDetection(image);
             progressPicture(image);
             progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
-            //End Phase1
+            return image;
+        }
+
+        private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
+        {
             //Start Phase2
             //int accuracy = 600;
             //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
@@ -346,11 +348,6 @@ namespace INFOIBV
             //progressPicture(image);
             //progressBar.Value = 1;
             //End Phase2
-            return image;
-        }
-
-        private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
-        {
             int accuracy = 600;
 
             int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110));
