@@ -487,6 +487,34 @@ namespace INFOIBV
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
         }
 
+        private bool subImageHasHoleInShape(Color[,] image)
+        {
+            for (int x = 0; x < image.GetLength(0); x++)
+            {
+                bool insideShape = false;
+                bool visitedShape = false;
+                for (int y = 0; y < image.GetLength(1); y++)
+                {
+                    if (image[x, y].R == 255)
+                    {
+                        insideShape = true;
+                        if (visitedShape)
+                        {
+                            return true;
+                        }
+                    }
+
+                    if (image[x, y].R == 0 && insideShape)
+                    {
+                        insideShape = false;
+                        visitedShape = true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private List<int> getLabelFromNeighbourhood(int[] neighbourhood)
         {
             List<int> output = new List<int>();
