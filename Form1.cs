@@ -328,9 +328,6 @@ namespace INFOIBV
             Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
-            image = conversionEdgeDetection(image);
-            progressPicture(image);
-            progressBar.Value = 1;
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
@@ -353,12 +350,14 @@ namespace INFOIBV
         {
             int accuracy = 600;
 
-            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 110));
+            Color[,] edgeDetectedImage = conversionEdgeDetection(image);
+
+            int[,] newGraph = applyClosingToTresholdedHoughGraph(thresholdHoughGraph(nonMaxSupression(conversionHough(edgeDetectedImage, accuracy)), 100));
             //remove connected shapes with small areas
             //get center of shapes
             //Draw lines
             //Connect intersections
-            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(newGraph), 600, image);
+            return drawLinesFromHoughOnImage(getCoordinatesWhitePixels(newGraph), 600, ogImage);
         }
 
         private Color[,] applyPhaseThree(Color[,] image)
