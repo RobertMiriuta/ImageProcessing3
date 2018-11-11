@@ -299,36 +299,37 @@ namespace INFOIBV
         private Color[,] applyPipeline(Color[,] image)
         {
             //Start Phase1
-            //Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
+            Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
             //image = conversionGaussian(image, 2, 5);
             //progressPicture(image);
             //progressBar.Value = 1
-            image = conversionThreshold(image, 100);
+            image = conversionPercentageThreshold(image);
             progressPicture(image);
             progressBar.Value = 1;
-            //Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
-            //compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));
-            //compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));
-            //image = conversionEdgeDetection(image);
-            //progressPicture(image);
-            //progressBar.Value = 1;
-            //image = conversionGeodesicDilation(image, true, compareImage, false);
-            //progressPicture(image);
-            //progressBar.Value = 1;
+            Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
+            compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
+            compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
+            image = conversionEdgeDetection(image);
+            progressPicture(image);
+            progressBar.Value = 1;
+            image = conversionGeodesicDilation(image, true, compareImage, false);
+            progressPicture(image);
+            progressBar.Value = 1;
             //End Phase1
             //Start Phase2
             //int accuracy = 600;
             //int[,] cleanGraph = thresholdHoughGraph(nonMaxSupression(conversionHough(image, accuracy)), 100);
             //image = drawLinesFromHoughOnImage(getCoordinatesWhitePixels(cleanGraph), accuracy, ogImage);
             //image = conversionShapeLabeling(labelShapes(image));
-            var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
-            var whateva = calcAreaFromChaincode(whatevs.ElementAt(0));
-            var whatevi = calcPerimeterFromChaincode(whatevs.ElementAt(0));
-            progressPicture(image);
-            progressBar.Value = 1;
+            //var whatevs = calcRunLengthEncodingMany(labelShapes(image).Item1);
+            //var whateva = calcAreaFromChaincode(whatevs.ElementAt(0));
+            //var whatevi = calcPerimeterFromChaincode(whatevs.ElementAt(0));
+            //progressPicture(image);
+            //progressBar.Value = 1;
+            //End Phase2
             return image;
         }
 
@@ -431,19 +432,17 @@ namespace INFOIBV
             return output;
         }
 
-        private List<List<int>> calcRunLengthEncodingMany(int[,] labeledShapes)
+        private List<Color[,]> extractSubImageFromLabeledShapes(int[,] labeledShapes)
         {
             List<Color[,]> subimages = new List<Color[,]>();
-            List<List<int>> outputEncodings = new List<List<int>>();
-
             List<int> labels = getLabelsFromIntMatrix(labeledShapes);
 
             foreach (var label in labels)
             {
                 Color[,] currImage = makeBinaryImage(labeledShapes.GetLength(0), labeledShapes.GetLength(1));
-                for(int x = 0; x < labeledShapes.GetLength(0); x++)
+                for (int x = 0; x < labeledShapes.GetLength(0); x++)
                 {
-                    for(int y = 0; y < labeledShapes.GetLength(1); y++)
+                    for (int y = 0; y < labeledShapes.GetLength(1); y++)
                     {
                         if (labeledShapes[x, y] == label)
                             currImage[x, y] = Color.White;
@@ -452,10 +451,17 @@ namespace INFOIBV
                 subimages.Add(currImage);
             }
 
+            return subimages;
+        }
+
+        private List<List<int>> calcRunLengthEncodingMany(int[,] labeledShapes)
+        {
+            List<Color[,]> subimages = extractSubImageFromLabeledShapes(labeledShapes);
+            List<List<int>> outputEncodings = new List<List<int>>();
+
             foreach(var image in subimages)
                 outputEncodings.Add(calcRunLengthEnncodingSingleImage(image));
             
-
             return outputEncodings;
         }
 
