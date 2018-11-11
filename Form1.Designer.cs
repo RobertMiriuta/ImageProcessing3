@@ -198,7 +198,13 @@
             "value counting",
             "boundary trace",
             "fourier descriptor",
-            "pipeline"});
+            "pipeline",
+            "applyFunction1",
+            "applyFunction2",
+            "applyFunction3",
+            "phase one",
+            "phase two",
+            "phase three"});
             this.comboBox1.Location = new System.Drawing.Point(688, 17);
             this.comboBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.comboBox1.Name = "comboBox1";
