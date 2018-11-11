@@ -458,12 +458,10 @@ namespace INFOIBV
                 {
                     if (image[x, y] == Color.FromArgb(255, 255, 255))
                         shapes[x, y] = unlabeledNumber;
-                    else
-                        shapes[x, y] = backgroundNumber;
                 }
             }
 
-            UF connectionTree = new UF(1000); //probably less than 100 shapes
+            UF connectionTree = new UF(500); //probably less than 100 shapes
 
             //top left to bottom right
             for (int y = 0; y < shapes.GetLength(1); y++)
@@ -476,13 +474,14 @@ namespace INFOIBV
                         {
                             int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
 
-                            if (topNeighborhood.Max() == 0) //first pixel of shape
+                            int max = topNeighborhood.Max();
+                            if (max == 0) //first pixel of shape
                             {
                                 shapes[x, y] = currentLabelNumber++;
                             }
                             else //grow shape
                             {
-                                shapes[x, y] = topNeighborhood.Max();
+                                shapes[x, y] = max;
                                 List<int> unionLabels = getLabelFromNeighbourhood(topNeighborhood);
                                 if (unionLabels.Count > 1 && shapes[x, y] > backgroundNumber)
                                 {
@@ -717,7 +716,7 @@ namespace INFOIBV
             Tuple<int[,], int> thing = labelShapes(image);
             int amountOfInnerHoles = extractSubImageFromLabeledShapes(thing.Item1).Count;
             Console.WriteLine("Amount of holes found = " + amountOfInnerHoles);
-            if (amountOfInnerHoles >= amountWanted)
+            if (amountOfInnerHoles >= amountWanted && amountOfInnerHoles < 25)
             {
                 return true;
             }
