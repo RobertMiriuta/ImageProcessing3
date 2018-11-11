@@ -316,37 +316,38 @@ namespace INFOIBV
 
         private Color[,] applyPhaseOne(Color[,] image)
         {
-            Color[,] ogImage = image.Clone() as Color[,]; //for geodesic dilation
+            //Conversion to Grayscale
             image = conversionGrayscale(image);
             progressPicture(image);
             progressBar.Value = 1;
-            //image = conversionGaussian(image, 2, 5);
-            //progressPicture(image);
-            //progressBar.Value = 1
+            //Conversion to specific threshold
             image = conversionPercentageThreshold(image);
             progressPicture(image);
             progressBar.Value = 1;
+
+            //Remove background noise
             Color[,] compareImage = image.Clone() as Color[,]; //for geodesic dilation
             compareImage = conversionErosionBinary(compareImage, convertInputToTuplesBinary(false));   //opening the image
             compareImage = conversionDilationBinary(compareImage, convertInputToTuplesBinary(false));  //opening the image
             progressPicture(image);
             progressBar.Value = 1;
+
+            //Part 2 of removing background noise
             image = conversionGeodesicDilation(image, true, compareImage, false);
             progressPicture(image);
             progressBar.Value = 1;
+            //Return something nice
             return image;
         }
-
 
         private Color[,] applyPhaseTwo(Color[,] image, Color[,] ogImage)
         {
             //Start Phase2
-            int accuracy = globalAccuracy;
-
-
             int[,] labelShapeImages = labelShapes(image).Item1;
             List<Color[,]> subImages = extractSubImageFromLabeledShapes(labelShapeImages);
             List<List<int>> listOfChaincodes = calcRunLengthEncodingMany(labelShapeImages);
+
+            //add area to image, to filter on later
             List<Tuple<double, Color[,]>> areas = new List<Tuple<double, Color[,]>>();
             for (int i = 0; i < listOfChaincodes.Count ; i ++)
             {
@@ -354,6 +355,8 @@ namespace INFOIBV
                 areas.Add(new Tuple<double, Color[,]>(area, subImages.ElementAt(i)));
             }
 
+            //If the area is above 10, which means there are more than 10 shapes, remove the smallest ones
+            Console.WriteLine("Subimages here before filtering on amount of shapes " + areas.Count);
             if (areas.Count > 10)
             {
                 areas.Sort((x, y) => y.Item1.CompareTo(x.Item1));
@@ -363,34 +366,29 @@ namespace INFOIBV
                     areas.RemoveAt(10);
                 }
             }
-
             List<Color[,]> filteredImagesOnSize = new List<Color[,]>();
             foreach (var element in areas)
             {
                 filteredImagesOnSize.Add(element.Item2);
             }
-
+            Console.WriteLine("Subimages left after filtering on amount of shapes " + filteredImagesOnSize.Count);
+            //Filter images on holes inside the image, if that is above the threshold, add image to the output.
             List<Color[,]> filteredSubImages = new List<Color[,]>();
-
             foreach (var element in filteredImagesOnSize)
             {
-                if (subImageHasHoleInShape(element))
+                if (subImageHasAmountOfHolesInShape((Color[,]) element.Clone(), 4))
                 {
                     filteredSubImages.Add(element);
                 }
             }
-            Color[,] outputImage = makeBinaryImage();
-            foreach (var element in filteredSubImages)
-            {
-                outputImage = applyPhaseThree(element, outputImage);
-            }
+            Console.WriteLine("Subimages left after filtering on amount of holes " + filteredSubImages.Count);
 
+            Color[,] outputImage = createNiceImage(filteredSubImages);
             return outputImage;
         }
 
-        private Color[,] applyPhaseThree(Color[,] maybeCard, Color[,] outputImage)
+        private Color[,] applyPhaseThree(Color[,] image)
         {
-
             return image;
         }
 
@@ -398,8 +396,7 @@ namespace INFOIBV
         {
             Color[,] ogImage = (Color[,]) image.Clone();
             image = applyPhaseOne(image);
-            image = applyPhaseTwo(image, ogImage);
-            return applyPhaseThree(image);
+            return applyPhaseTwo(image, ogImage);
         }
 
         private Color[,] testFunction1(Color[,] image)
@@ -477,11 +474,8 @@ namespace INFOIBV
                     {
                         try
                         {
-                            if ((x + y) % 100 == 0)
-                            {
-                                Console.WriteLine(shapes[x, y] + "processing this with currentlabel being " + currentLabelNumber);
-                            }
                             int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
+
                             if (topNeighborhood.Max() == 0) //first pixel of shape
                             {
                                 shapes[x, y] = currentLabelNumber++;
@@ -500,7 +494,7 @@ namespace INFOIBV
                         }
                         catch (IndexOutOfRangeException)
                         {
-                            Debugger.debug(2, "Shape Labeliing: An Index was out of Range");
+                            Debugger.debug(2, "Shape Labeling: An Index was out of Range");
                         }
                     }
                 }
@@ -514,6 +508,30 @@ namespace INFOIBV
                 }
             }
             return new Tuple<int[,],int>(shapes, currentLabelNumber-1);
+        }
+
+        private Color[,] createNiceImage(List<Color[,]> imageList)
+        {
+            Color[,] outputImage = makeBinaryImage();
+            int colorStep = 25;
+
+            foreach (var image in imageList)
+            {
+                Random rnd = new Random();
+                int ranNum1 = rnd.Next(1, 255);
+                int ranNum2 = rnd.Next(1, 255);
+                int ranNum3 = rnd.Next(1, 255);
+                for (int x = 0; x < image.GetLength(0); x++)
+                for (int y = 0; y < image.GetLength(1); y++)
+                {
+                    if (image[x, y].R != 0) outputImage[x, y] = Color.FromArgb((ranNum1 * colorStep) % 255,
+                        (ranNum2 * colorStep) % 255, (ranNum3 * colorStep) % 255);
+
+                }
+
+            }
+
+            return outputImage;
         }
 
         private int[,] houghLabelShapes(int[,] houghGraph)
@@ -545,10 +563,6 @@ namespace INFOIBV
                     {
                         try
                         {
-                            if ((x + y) % 100 == 0)
-                            {
-                                Console.WriteLine(shapes[x, y] + "processing this with currentlabel being " + currentLabelNumber);
-                            }
                             int[] topNeighborhood = { shapes[x - 1, y], shapes[x - 1, y - 1], shapes[x, y - 1], shapes[x + 1, y - 1] };
                             if (topNeighborhood.Max() == 0) //first pixel of shape
                             {
@@ -697,6 +711,19 @@ namespace INFOIBV
             return false;
         }
 
+        private bool subImageHasAmountOfHolesInShape(Color[,] image, int amountWanted)
+        {
+            image = conversionComplement(image);
+            Tuple<int[,], int> thing = labelShapes(image);
+            int amountOfInnerHoles = extractSubImageFromLabeledShapes(thing.Item1).Count;
+            Console.WriteLine("Amount of holes found = " + amountOfInnerHoles);
+            if (amountOfInnerHoles >= amountWanted)
+            {
+                return true;
+            }
+            return false;
+        }
+
         private List<int> getLabelFromNeighbourhood(int[] neighbourhood)
         {
             List<int> output = new List<int>();
@@ -753,7 +780,7 @@ namespace INFOIBV
             List<int> runLengthCode = new List<int>();
             for (var x = 0; x < listOfThings.Count - 1; x++)
             {
-                Console.WriteLine("Encoding Point : " + listOfThings.ElementAt(x).Item1 + " " + listOfThings.ElementAt(x).Item2);
+               
                 var newPt = new Tuple<int, int>(listOfThings.ElementAt(x + 1).Item1 - listOfThings.ElementAt(x).Item1,
                                                     listOfThings.ElementAt(x + 1).Item2 - listOfThings.ElementAt(x).Item2);
                 runLengthCode.Add(getIndexAtElem(newPt));
@@ -763,9 +790,6 @@ namespace INFOIBV
                                                     listOfThings.ElementAt(0).Item2 - listOfThings.ElementAt(listOfThings.Count - 1).Item2);
             runLengthCode.Add(getIndexAtElem(lastPt));
 
-            foreach(var elem in runLengthCode)
-                Console.Write(elem);
-            Console.WriteLine("");
             return runLengthCode;
         }
 
@@ -807,35 +831,27 @@ namespace INFOIBV
                 {
                     case 0:
                         area -= ypos;
-                        Console.WriteLine("0: " + area);
                         break;
                     case 1:
                         area -= --ypos;
-                        Console.WriteLine("1: " + area);
                         break;
                     case 2:
                         ypos--;
-                        Console.WriteLine("2: " + area);
                         break;
                     case 3:
                         area += --ypos;
-                        Console.WriteLine("3: " + area);
                         break;
                     case 4:
                         area += ypos;
-                        Console.WriteLine("4: " + area);
                         break;
                     case 5:
                         area += ++ypos;
-                        Console.WriteLine("5: " + area);
                         break;
                     case 6:
                         ypos++;
-                        Console.WriteLine("6: " + area);
                         break;
                     case 7:
                         area -= ++ypos;
-                        Console.WriteLine("7: " + area);
                         break;
                     default:
                         Console.WriteLine("default");
@@ -2073,6 +2089,7 @@ namespace INFOIBV
 
             return listOfCoordinates;
         }
+
         private List<Tuple<int, int>> getShapeCoordinates(int[,] image, int startx, int starty)
         {
             var listOfCoordinates = new List<Tuple<int, int>>();
